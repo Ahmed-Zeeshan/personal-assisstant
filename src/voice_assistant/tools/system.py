@@ -20,10 +20,23 @@ def open_url(url: str) -> ToolResult:
     )
 
 
-def open_app(name: str) -> ToolResult:
-    """Launch a desktop application by command name (e.g. 'firefox')."""
+def open_app(name: str, *, confirmed: bool = False) -> ToolResult:
+    """Launch a desktop application by command name (e.g. 'firefox').
+
+    Always requires confirmed=True. The brain may receive prompt-injected
+    instructions from data tools (read_file, etc.) — this guard prevents
+    silent execution of arbitrary commands.
+    """
+    if not confirmed:
+        return ToolResult(
+            ok=False,
+            summary="open_app requires confirmation",
+            error="set confirmed=true to launch an application",
+        )
     try:
         cmd = shlex.split(name)
+        if not cmd:
+            return ToolResult(ok=False, summary="empty command", error="empty command")
         proc = subprocess.Popen(cmd)
         return ToolResult(ok=True, summary=f"launched {name} (pid={proc.pid})")
     except FileNotFoundError:

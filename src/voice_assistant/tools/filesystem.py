@@ -108,8 +108,9 @@ def delete_path(
 ) -> ToolResult:
     """Delete a file or folder (recursive). Always requires confirmed=True.
 
-    Note: rate-limit slot is consumed even if the underlying filesystem op fails
-    (e.g. permission denied). This is intentional — the user attempted a delete.
+    The rate-limit slot is consumed only after the existence check passes
+    (i.e., when an actual delete attempt occurs). A nonexistent-path call
+    does not count against the rate.
     """
     p = Path(path).expanduser()
     policy.check_destructive(p, confirmed=confirmed)

@@ -68,3 +68,27 @@ def test_delete_path_schema_has_no_default_for_confirmed(sandbox: Path):
     confirmed_schema = delete.parameters["properties"]["confirmed"]
     assert "default" not in confirmed_schema
     assert "confirmed" in delete.parameters["required"]
+
+
+def test_registry_includes_send_email_when_credentials_present(sandbox: Path, tmp_path):
+    from unittest.mock import patch, MagicMock
+    pol = SafetyPolicy(
+        allowed_roots=[sandbox],
+        destructive_requires_confirmation=True,
+        delete_rate_per_minute=5,
+    )
+    creds = tmp_path / "creds.json"
+    creds.write_text("{}")
+    reg = build_registry(policy=pol, gmail_credentials_file=creds)
+    names = {spec.name for spec in reg}
+    assert "send_email" in names
+
+    send = next(s for s in reg if s.name == "send_email")
+    fake_service = MagicMock()
+    fake_send = fake_service.users.return_value.messages.return_value.send
+    fake_send.return_value.execute.return_value = {"id": "xyz"}
+    with patch(
+        "voice_assistant.tools.gmail._build_service", return_value=fake_service
+    ):
+        r = send.func(to="alice@example.com", subject="hi", body="hi")
+    assert r.ok

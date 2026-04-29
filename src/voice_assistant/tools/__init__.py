@@ -4,7 +4,7 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Callable
 from voice_assistant.safety import SafetyPolicy
-from voice_assistant.tools.schema import ToolSpec, ToolResult
+from voice_assistant.tools.schema import ToolSpec
 from voice_assistant.tools import filesystem as fs
 from voice_assistant.tools import gmail
 from voice_assistant.tools import system
@@ -144,12 +144,16 @@ def build_registry(
             name="open_app",
             description=(
                 "Launch a desktop application by command name "
-                "(e.g. 'firefox', 'code', 'gnome-calculator')."
+                "(e.g. 'firefox', 'code', 'gnome-calculator'). "
+                "Always requires confirmed=true."
             ),
             parameters={
                 "type": "object",
-                "properties": {"name": {"type": "string"}},
-                "required": ["name"],
+                "properties": {
+                    "name": {"type": "string"},
+                    "confirmed": {"type": "boolean"},
+                },
+                "required": ["name", "confirmed"],
                 "additionalProperties": False,
             },
             func=system.open_app,

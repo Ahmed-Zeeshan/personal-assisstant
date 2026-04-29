@@ -6,7 +6,7 @@ import time
 import numpy as np
 import sounddevice as sd
 from pynput import keyboard
-from voice_assistant.stt import AudioBuffer
+from voice_assistant.audio_types import AudioBuffer
 
 log = logging.getLogger(__name__)
 

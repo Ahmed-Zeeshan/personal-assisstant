@@ -6,17 +6,11 @@ miscompiled audio cannot reach the model.
 """
 from __future__ import annotations
 import logging
-from dataclasses import dataclass
 import numpy as np
 from faster_whisper import WhisperModel
+from voice_assistant.audio_types import AudioBuffer
 
 log = logging.getLogger(__name__)
-
-
-@dataclass
-class AudioBuffer:
-    samples: np.ndarray   # mono float32 in [-1, 1]
-    sample_rate: int
 
 
 class Transcriber:

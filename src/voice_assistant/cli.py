@@ -35,11 +35,15 @@ def main() -> None:
         delete_rate_per_minute=cfg.safety.delete_rate_per_minute,
     )
     brain = Brain(provider=cfg.brain.provider, model=cfg.brain.model)
-    gmail_creds = (
-        cfg.gmail.credentials_file
-        if cfg.gmail and cfg.gmail.credentials_file.exists()
-        else None
-    )
+    gmail_creds = None
+    if cfg.gmail:
+        if cfg.gmail.credentials_file.exists():
+            gmail_creds = cfg.gmail.credentials_file
+        else:
+            log.warning(
+                "gmail credentials_file %s not found; send_email tool disabled",
+                cfg.gmail.credentials_file,
+            )
     orch = Orchestrator(
         brain=brain,
         tools=build_registry(
@@ -72,6 +76,11 @@ def main() -> None:
         from voice_assistant.stt import Transcriber
         from voice_assistant.tts import Speaker
 
+        if cfg.audio.trigger != "hotkey":
+            raise SystemExit(
+                f"audio.trigger='{cfg.audio.trigger}' is not implemented in "
+                f"this build. Set audio.trigger=hotkey in config.yaml."
+            )
         listener = HotkeyListener(cfg.audio.hotkey)
         transcriber = Transcriber(
             model_name=cfg.stt.model, language=cfg.stt.language

@@ -1,0 +1,42 @@
+[project]
+name = "voice-assistant"
+version = "0.1.0"
+description = "Personal voice-controlled assistant for the desktop"
+requires-python = ">=3.11"
+dependencies = [
+    "pyyaml>=6.0",
+    "pydantic>=2.5",
+    "litellm>=1.50",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+audio = [
+    "faster-whisper>=1.0",
+    "sounddevice>=0.4.6",
+    "pynput>=1.7.6",
+    "numpy>=1.24",
+    "piper-tts>=1.2",
+]
+gmail = [
+    "google-api-python-client>=2.100",
+    "google-auth-oauthlib>=1.1",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-mock>=3.12",
+]
+
+[project.scripts]
+voice-assistant = "voice_assistant.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

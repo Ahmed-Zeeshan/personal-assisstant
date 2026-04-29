@@ -10,6 +10,7 @@ def configure_logging(level: str, log_file: Path) -> None:
     root = logging.getLogger()
     root.setLevel(level)
     for h in list(root.handlers):
+        h.close()
         root.removeHandler(h)
 
     fmt = logging.Formatter(
@@ -22,5 +23,6 @@ def configure_logging(level: str, log_file: Path) -> None:
     root.addHandler(fh)
 
     sh = logging.StreamHandler()
+    sh.setLevel(logging.WARNING)
     sh.setFormatter(fmt)
     root.addHandler(sh)

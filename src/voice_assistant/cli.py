@@ -35,7 +35,17 @@ def main() -> None:
         delete_rate_per_minute=cfg.safety.delete_rate_per_minute,
     )
     brain = Brain(provider=cfg.brain.provider, model=cfg.brain.model)
-    orch = Orchestrator(brain=brain, tools=build_registry(policy=policy))
+    gmail_creds = (
+        cfg.gmail.credentials_file
+        if cfg.gmail and cfg.gmail.credentials_file.exists()
+        else None
+    )
+    orch = Orchestrator(
+        brain=brain,
+        tools=build_registry(
+            policy=policy, gmail_credentials_file=gmail_creds
+        ),
+    )
 
     if args.text:
         print("voice-assistant text mode. Ctrl-D to exit.")

@@ -1,20 +1,18 @@
 from __future__ import annotations
 import inspect
+from functools import partial
+from pathlib import Path
 from typing import Any, Callable
 from voice_assistant.safety import SafetyPolicy
 from voice_assistant.tools.schema import ToolSpec, ToolResult
 from voice_assistant.tools import filesystem as fs
+from voice_assistant.tools import gmail
 
 
 def _bind_filesystem_tool(
     fn: Callable[..., ToolResult], *, policy: SafetyPolicy
 ) -> Callable[..., ToolResult]:
-    """Return a callable that injects `policy` and silently drops unknown kwargs.
-
-    This is defence-in-depth against an LLM emitting unexpected fields. The
-    schema's `additionalProperties: false` is the primary guard at the API
-    boundary; this binding is the secondary guard at the call site.
-    """
+    """Return a callable that injects `policy` and silently drops unknown kwargs."""
     sig = inspect.signature(fn)
     accepted = set(sig.parameters.keys()) - {"policy"}
 
@@ -27,8 +25,12 @@ def _bind_filesystem_tool(
     return caller
 
 
-def build_registry(*, policy: SafetyPolicy) -> list[ToolSpec]:
-    return [
+def build_registry(
+    *,
+    policy: SafetyPolicy,
+    gmail_credentials_file: Path | None = None,
+) -> list[ToolSpec]:
+    specs: list[ToolSpec] = [
         ToolSpec(
             name="create_folder",
             description="Create a folder (and any missing parents) at `path`.",
@@ -127,3 +129,30 @@ def build_registry(*, policy: SafetyPolicy) -> list[ToolSpec]:
             func=_bind_filesystem_tool(fs.delete_path, policy=policy),
         ),
     ]
+
+    if gmail_credentials_file is not None:
+        specs.append(
+            ToolSpec(
+                name="send_email",
+                description=(
+                    "Send a plain-text email via the user's Gmail account. "
+                    "Always confirm with the user before calling this."
+                ),
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "to": {"type": "string"},
+                        "subject": {"type": "string"},
+                        "body": {"type": "string"},
+                    },
+                    "required": ["to", "subject", "body"],
+                    "additionalProperties": False,
+                },
+                func=partial(
+                    gmail.send_email,
+                    credentials_file=str(gmail_credentials_file),
+                ),
+            )
+        )
+
+    return specs

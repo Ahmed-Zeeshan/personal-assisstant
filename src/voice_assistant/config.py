@@ -13,6 +13,7 @@ class BrainConfig(BaseModel):
 class STTConfig(BaseModel):
     engine: Literal["faster-whisper"]
     model: str
+    language: str = "en"
 
 
 class TTSConfig(BaseModel):

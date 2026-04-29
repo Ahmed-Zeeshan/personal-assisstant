@@ -5,6 +5,7 @@ brain:
 stt:
   engine: faster-whisper
   model: small
+  language: en
 
 tts:
   engine: piper

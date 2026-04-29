@@ -1909,7 +1909,9 @@ Replace with:
         from voice_assistant.tts import Speaker
 
         listener = HotkeyListener(cfg.audio.hotkey)
-        transcriber = Transcriber(model_name=cfg.stt.model)
+        transcriber = Transcriber(
+            model_name=cfg.stt.model, language=cfg.stt.language
+        )
         speaker = Speaker(voice=cfg.tts.voice)
 
         print(f"voice-assistant ready. Press {cfg.audio.hotkey} to talk.")

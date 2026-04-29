@@ -17,7 +17,7 @@ audio:
 
 safety:
   allowed_roots:
-    - ~
+    - "~"
   destructive_requires_confirmation: true
   delete_rate_per_minute: 5
 

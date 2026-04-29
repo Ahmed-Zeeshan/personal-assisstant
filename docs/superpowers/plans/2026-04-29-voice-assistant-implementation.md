@@ -146,7 +146,7 @@ audio:
 
 safety:
   allowed_roots:
-    - ~
+    - "~"
   destructive_requires_confirmation: true
   delete_rate_per_minute: 5
 
@@ -248,7 +248,7 @@ def test_load_minimal_valid_config(tmp_path: Path):
           silence_seconds: 1.5
         safety:
           allowed_roots:
-            - ~
+            - "~"
           destructive_requires_confirmation: true
           delete_rate_per_minute: 5
         gmail:
@@ -276,7 +276,7 @@ def test_unknown_provider_rejected(tmp_path: Path):
         stt: {engine: faster-whisper, model: small}
         tts: {engine: piper, voice: x}
         audio: {trigger: hotkey, hotkey: x, silence_seconds: 1.0}
-        safety: {allowed_roots: [~], destructive_requires_confirmation: true, delete_rate_per_minute: 5}
+        safety: {allowed_roots: ["~"], destructive_requires_confirmation: true, delete_rate_per_minute: 5}
         gmail: {credentials_file: x}
         logging: {level: INFO, file: x}
         """,

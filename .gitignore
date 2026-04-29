@@ -10,7 +10,8 @@ config.yaml
 logs/
 *.log
 *.gguf
-*.bin
 *-creds*.json
 *-token*.json
+dist/
+build/
 .DS_Store

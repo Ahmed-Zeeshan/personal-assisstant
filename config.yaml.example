@@ -1,5 +1,5 @@
 brain:
-  provider: claude          # claude | openai | gemini
+  provider: anthropic       # anthropic | openai | gemini | ollama
   model: claude-sonnet-4-6
 
 stt:

@@ -128,7 +128,7 @@ GEMINI_API_KEY=
 
 ```yaml
 brain:
-  provider: claude          # claude | openai | gemini
+  provider: anthropic       # anthropic | openai | gemini | ollama
   model: claude-sonnet-4-6
 
 stt:
@@ -234,7 +234,7 @@ def test_load_minimal_valid_config(tmp_path: Path):
         tmp_path,
         """
         brain:
-          provider: claude
+          provider: anthropic
           model: claude-sonnet-4-6
         stt:
           engine: faster-whisper
@@ -260,7 +260,7 @@ def test_load_minimal_valid_config(tmp_path: Path):
     )
     cfg = load_config(cfg_path)
     assert isinstance(cfg, Config)
-    assert cfg.brain.provider == "claude"
+    assert cfg.brain.provider == "anthropic"
     assert cfg.brain.model == "claude-sonnet-4-6"
     assert cfg.audio.silence_seconds == 1.5
     assert cfg.safety.delete_rate_per_minute == 5
@@ -289,7 +289,7 @@ def test_allowed_roots_expand_user(tmp_path: Path):
     cfg_path = write(
         tmp_path,
         """
-        brain: {provider: claude, model: claude-sonnet-4-6}
+        brain: {provider: anthropic, model: claude-sonnet-4-6}
         stt: {engine: faster-whisper, model: small}
         tts: {engine: piper, voice: en_US-amy-medium}
         audio: {trigger: hotkey, hotkey: ctrl+shift+space, silence_seconds: 1.5}
@@ -321,7 +321,7 @@ from pydantic import BaseModel, Field, ValidationError, field_validator
 
 
 class BrainConfig(BaseModel):
-    provider: Literal["claude", "openai", "gemini", "ollama"]
+    provider: Literal["anthropic", "openai", "gemini", "ollama"]
     model: str
 
 
@@ -1191,7 +1191,7 @@ def test_brain_returns_plain_text(monkeypatch):
         return fake
 
     monkeypatch.setattr("voice_assistant.brain.completion", fake_completion)
-    b = Brain(provider="claude", model="claude-sonnet-4-6")
+    b = Brain(provider="anthropic", model="claude-sonnet-4-6")
     out = b.respond(
         user_text="say hello",
         history=[],
@@ -1199,7 +1199,7 @@ def test_brain_returns_plain_text(monkeypatch):
     )
     assert isinstance(out, PlainText)
     assert out.content == "hello back"
-    assert called["model"] == "claude/claude-sonnet-4-6"
+    assert called["model"] == "anthropic/claude-sonnet-4-6"
     assert any(t["function"]["name"] == "create_folder" for t in called["tools"])
 
 
@@ -1473,7 +1473,18 @@ class Orchestrator:
 
         # Record assistant tool-call + tool result, then ask brain to summarise.
         self.history.append(
-            Message(role="assistant", content=f"[called {tc.name}]")
+            Message(
+                role="assistant",
+                content="",
+                tool_calls=[{
+                    "id": tc.id,
+                    "type": "function",
+                    "function": {
+                        "name": tc.name,
+                        "arguments": json.dumps(tc.arguments),
+                    },
+                }],
+            )
         )
         self.history.append(
             Message(

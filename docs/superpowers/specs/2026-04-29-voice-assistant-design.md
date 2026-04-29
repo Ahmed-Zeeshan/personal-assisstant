@@ -100,7 +100,7 @@ The system is split into seven small modules, each with a single responsibility 
 - **Implementation:** A thin wrapper around **LiteLLM**, which already abstracts ~100 providers behind one API. Provider chosen by config:
   ```yaml
   brain:
-    provider: claude   # claude | openai | gemini | ollama
+    provider: anthropic   # anthropic | openai | gemini | ollama
     model: claude-sonnet-4-6
   ```
 - **Tool-use feature is required.** All three primary providers (Anthropic, OpenAI, Gemini) support function-calling natively; LiteLLM exposes a unified `tools=[...]` parameter.
@@ -152,7 +152,7 @@ A single `config.yaml` in the project root:
 
 ```yaml
 brain:
-  provider: claude
+  provider: anthropic
   model: claude-sonnet-4-6
   api_key_env: ANTHROPIC_API_KEY
 

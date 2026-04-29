@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, ValidationError, field_validator
 
 
 class BrainConfig(BaseModel):
-    provider: Literal["claude", "openai", "gemini", "ollama"]
+    provider: Literal["anthropic", "openai", "gemini", "ollama"]
     model: str
 
 

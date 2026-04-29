@@ -15,7 +15,7 @@ def test_load_minimal_valid_config(tmp_path: Path):
         tmp_path,
         """
         brain:
-          provider: claude
+          provider: anthropic
           model: claude-sonnet-4-6
         stt:
           engine: faster-whisper
@@ -41,7 +41,7 @@ def test_load_minimal_valid_config(tmp_path: Path):
     )
     cfg = load_config(cfg_path)
     assert isinstance(cfg, Config)
-    assert cfg.brain.provider == "claude"
+    assert cfg.brain.provider == "anthropic"
     assert cfg.brain.model == "claude-sonnet-4-6"
     assert cfg.audio.silence_seconds == 1.5
     assert cfg.safety.delete_rate_per_minute == 5
@@ -70,7 +70,7 @@ def test_allowed_roots_expand_user(tmp_path: Path):
     cfg_path = write(
         tmp_path,
         """
-        brain: {provider: claude, model: claude-sonnet-4-6}
+        brain: {provider: anthropic, model: claude-sonnet-4-6}
         stt: {engine: faster-whisper, model: small}
         tts: {engine: piper, voice: en_US-amy-medium}
         audio: {trigger: hotkey, hotkey: ctrl+shift+space, silence_seconds: 1.5}
@@ -102,7 +102,7 @@ def test_gmail_section_is_optional(tmp_path: Path):
     cfg_path = write(
         tmp_path,
         """
-        brain: {provider: claude, model: claude-sonnet-4-6}
+        brain: {provider: anthropic, model: claude-sonnet-4-6}
         stt: {engine: faster-whisper, model: small}
         tts: {engine: piper, voice: en_US-amy-medium}
         audio: {trigger: hotkey, hotkey: ctrl+shift+space, silence_seconds: 1.5}

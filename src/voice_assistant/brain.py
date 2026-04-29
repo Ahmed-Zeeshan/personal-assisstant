@@ -1,9 +1,12 @@
 from __future__ import annotations
 import json
+import logging
 from dataclasses import dataclass, field
 from typing import Any, Literal
 from litellm import completion
 from voice_assistant.tools.schema import ToolSpec
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -12,6 +15,9 @@ class Message:
     content: str
     tool_call_id: str | None = None
     name: str | None = None
+    # On an assistant turn that called tools, the raw tool_calls array
+    # must be carried through so the next API turn passes provider validation.
+    tool_calls: list[dict[str, Any]] | None = None
 
 
 @dataclass
@@ -26,7 +32,11 @@ class ToolCall:
     arguments: dict[str, Any]
 
 
-BrainResponse = PlainText | ToolCall
+BrainResponse = PlainText | ToolCall  # annotation-only alias; do not isinstance against this
+
+
+class BrainError(Exception):
+    """Raised when the brain cannot produce a usable response."""
 
 
 SYSTEM_PROMPT = (
@@ -46,10 +56,10 @@ class Brain:
     provider: str
     model: str
     system_prompt: str = field(default=SYSTEM_PROMPT)
+    tool_choice: str = "auto"
 
     def _qualified_model(self) -> str:
-        # litellm uses "<provider>/<model>" except for openai (bare) — we
-        # always prefix to be explicit.
+        # LiteLLM routes by "<provider>/<model>"; always pass the explicit prefix.
         return f"{self.provider}/{self.model}"
 
     def respond(
@@ -63,10 +73,12 @@ class Brain:
         ]
         for m in history:
             entry: dict[str, Any] = {"role": m.role, "content": m.content}
-            if m.tool_call_id:
+            if m.tool_call_id is not None:
                 entry["tool_call_id"] = m.tool_call_id
-            if m.name:
+            if m.name is not None:
                 entry["name"] = m.name
+            if m.tool_calls is not None:
+                entry["tool_calls"] = m.tool_calls
             messages.append(entry)
         messages.append({"role": "user", "content": user_text})
 
@@ -76,15 +88,29 @@ class Brain:
         }
         if tools:
             kwargs["tools"] = [t.to_openai_format() for t in tools]
-            kwargs["tool_choice"] = "auto"
+            kwargs["tool_choice"] = self.tool_choice
 
+        log.debug("brain call: %s, %d msgs, %d tools",
+                  self._qualified_model(), len(messages), len(tools))
         resp = completion(**kwargs)
         msg = resp.choices[0].message
 
         tool_calls = getattr(msg, "tool_calls", None)
         if tool_calls:
+            if len(tool_calls) > 1:
+                log.warning(
+                    "brain returned %d tool_calls; executing only the first. "
+                    "Multi-tool fan-out not yet supported.",
+                    len(tool_calls),
+                )
             tc = tool_calls[0]
-            args = json.loads(tc.function.arguments or "{}")
+            try:
+                args = json.loads(tc.function.arguments or "{}")
+            except json.JSONDecodeError as e:
+                log.warning("brain emitted malformed tool_call args: %s", e)
+                return PlainText(
+                    content=f"[brain error: malformed tool arguments: {e}]"
+                )
             return ToolCall(id=tc.id, name=tc.function.name, arguments=args)
 
         return PlainText(content=msg.content or "")

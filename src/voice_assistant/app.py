@@ -1,0 +1,90 @@
+from __future__ import annotations
+import json
+import logging
+from dataclasses import dataclass, field
+from voice_assistant.brain import Brain, Message, PlainText, ToolCall
+from voice_assistant.tools.schema import ToolSpec, ToolResult
+
+log = logging.getLogger(__name__)
+
+
+@dataclass
+class Orchestrator:
+    brain: Brain
+    tools: list[ToolSpec]
+    history: list[Message] = field(default_factory=list)
+
+    def _tool_by_name(self, name: str) -> ToolSpec | None:
+        for t in self.tools:
+            if t.name == name:
+                return t
+        return None
+
+    def handle(self, user_text: str) -> str:
+        log.info("user: %s", user_text)
+        response = self.brain.respond(
+            user_text=user_text, history=self.history, tools=self.tools
+        )
+        self.history.append(Message(role="user", content=user_text))
+
+        if isinstance(response, PlainText):
+            self.history.append(
+                Message(role="assistant", content=response.content)
+            )
+            log.info("assistant: %s", response.content)
+            return response.content
+
+        # tool call
+        tc: ToolCall = response
+        log.info("tool_call: %s args=%s", tc.name, tc.arguments)
+        spec = self._tool_by_name(tc.name)
+        if spec is None:
+            result = ToolResult(
+                ok=False, summary=f"unknown tool {tc.name}",
+                error="tool not registered",
+            )
+        else:
+            try:
+                result = spec.func(**tc.arguments)
+            except TypeError as e:
+                result = ToolResult(
+                    ok=False, summary="bad arguments", error=str(e),
+                )
+
+        log.info("tool_result: %s", result.summary)
+
+        # Record assistant tool-call + tool result, then ask brain to summarise.
+        self.history.append(
+            Message(
+                role="assistant",
+                content="",
+                tool_calls=[{
+                    "id": tc.id,
+                    "type": "function",
+                    "function": {
+                        "name": tc.name,
+                        "arguments": json.dumps(tc.arguments),
+                    },
+                }],
+            )
+        )
+        self.history.append(
+            Message(
+                role="tool",
+                content=json.dumps(result.model_dump()),
+                tool_call_id=tc.id,
+                name=tc.name,
+            )
+        )
+
+        followup = self.brain.respond(
+            user_text=(
+                "Tool result above. Reply to the user in one short sentence."
+            ),
+            history=self.history,
+            tools=self.tools,
+        )
+        text = followup.content if isinstance(followup, PlainText) else result.summary
+        self.history.append(Message(role="assistant", content=text))
+        log.info("assistant: %s", text)
+        return text

@@ -71,7 +71,7 @@ class Orchestrator:
         self.history.append(
             Message(
                 role="tool",
-                content=json.dumps(result.model_dump()),
+                content=json.dumps(result.model_dump(), default=str),
                 tool_call_id=tc.id,
                 name=tc.name,
             )
@@ -82,8 +82,14 @@ class Orchestrator:
                 "Tool result above. Reply to the user in one short sentence."
             ),
             history=self.history,
-            tools=self.tools,
+            tools=[],
         )
+        if not isinstance(followup, PlainText):
+            log.warning(
+                "followup brain call returned a tool call (%s) despite tools=[]; "
+                "falling back to tool summary",
+                getattr(followup, "name", "?"),
+            )
         text = followup.content if isinstance(followup, PlainText) else result.summary
         self.history.append(Message(role="assistant", content=text))
         log.info("assistant: %s", text)

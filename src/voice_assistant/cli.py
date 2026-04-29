@@ -1,5 +1,6 @@
 from __future__ import annotations
 import argparse
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
 from voice_assistant.config import load_config
@@ -8,6 +9,8 @@ from voice_assistant.brain import Brain
 from voice_assistant.safety import SafetyPolicy
 from voice_assistant.tools import build_registry
 from voice_assistant.app import Orchestrator
+
+log = logging.getLogger(__name__)
 
 
 def main() -> None:
@@ -42,9 +45,18 @@ def main() -> None:
             except EOFError:
                 print()
                 return
+            except KeyboardInterrupt:
+                print()
+                return
             if not line:
                 continue
-            print(orch.handle(line))
+            try:
+                print(orch.handle(line))
+            except KeyboardInterrupt:
+                raise
+            except Exception as e:
+                log.exception("error in handle")
+                print(f"[error: {e}]")
     else:
         # Audio mode wired up in Task 13. For now, fail clearly.
         raise SystemExit("Audio mode not yet implemented. Use --text.")

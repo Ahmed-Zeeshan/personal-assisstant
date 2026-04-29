@@ -34,7 +34,7 @@ class SafetyConfig(BaseModel):
     @field_validator("allowed_roots")
     @classmethod
     def expand_roots(cls, v: list[Path]) -> list[Path]:
-        return [Path(str(p)).expanduser().resolve() for p in v]
+        return [p.expanduser().resolve() for p in v]
 
 
 class GmailConfig(BaseModel):
@@ -43,7 +43,7 @@ class GmailConfig(BaseModel):
     @field_validator("credentials_file")
     @classmethod
     def expand(cls, v: Path) -> Path:
-        return Path(str(v)).expanduser()
+        return v.expanduser()
 
 
 class LoggingConfig(BaseModel):
@@ -57,12 +57,18 @@ class Config(BaseModel):
     tts: TTSConfig
     audio: AudioConfig
     safety: SafetyConfig
-    gmail: GmailConfig
+    gmail: GmailConfig | None = None
     logging: LoggingConfig
 
 
 def load_config(path: Path) -> Config:
-    raw = yaml.safe_load(Path(path).read_text())
+    path = Path(path)
+    try:
+        raw = yaml.safe_load(path.read_text())
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Config file not found: {path}") from None
+    except yaml.YAMLError as e:
+        raise ValueError(f"Malformed YAML in {path}: {e}") from e
     try:
         return Config.model_validate(raw)
     except ValidationError as e:

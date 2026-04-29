@@ -84,3 +84,34 @@ def test_allowed_roots_expand_user(tmp_path: Path):
     )
     cfg = load_config(cfg_path)
     assert cfg.safety.allowed_roots[0].is_absolute()
+
+
+def test_missing_config_file_raises_clear_error(tmp_path: Path):
+    with pytest.raises(FileNotFoundError, match="not found"):
+        load_config(tmp_path / "does-not-exist.yaml")
+
+
+def test_malformed_yaml_raises_value_error(tmp_path: Path):
+    bad = tmp_path / "config.yaml"
+    bad.write_text("brain: { unclosed")
+    with pytest.raises(ValueError, match="Malformed YAML"):
+        load_config(bad)
+
+
+def test_gmail_section_is_optional(tmp_path: Path):
+    cfg_path = write(
+        tmp_path,
+        """
+        brain: {provider: claude, model: claude-sonnet-4-6}
+        stt: {engine: faster-whisper, model: small}
+        tts: {engine: piper, voice: en_US-amy-medium}
+        audio: {trigger: hotkey, hotkey: ctrl+shift+space, silence_seconds: 1.5}
+        safety:
+          allowed_roots: ["~"]
+          destructive_requires_confirmation: true
+          delete_rate_per_minute: 5
+        logging: {level: INFO, file: logs/voice-assistant.log}
+        """,
+    )
+    cfg = load_config(cfg_path)
+    assert cfg.gmail is None

@@ -2161,7 +2161,7 @@ with:
 ```python
     gmail_creds = (
         cfg.gmail.credentials_file
-        if cfg.gmail.credentials_file.exists()
+        if cfg.gmail and cfg.gmail.credentials_file.exists()
         else None
     )
     orch = Orchestrator(

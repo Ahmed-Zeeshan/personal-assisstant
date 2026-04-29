@@ -7,6 +7,7 @@ from voice_assistant.safety import SafetyPolicy
 from voice_assistant.tools.schema import ToolSpec, ToolResult
 from voice_assistant.tools import filesystem as fs
 from voice_assistant.tools import gmail
+from voice_assistant.tools import system
 
 
 def _bind_filesystem_tool(
@@ -127,6 +128,31 @@ def build_registry(
                 "additionalProperties": False,
             },
             func=_bind_filesystem_tool(fs.delete_path, policy=policy),
+        ),
+        ToolSpec(
+            name="open_url",
+            description="Open an http/https URL in the default browser.",
+            parameters={
+                "type": "object",
+                "properties": {"url": {"type": "string"}},
+                "required": ["url"],
+                "additionalProperties": False,
+            },
+            func=system.open_url,
+        ),
+        ToolSpec(
+            name="open_app",
+            description=(
+                "Launch a desktop application by command name "
+                "(e.g. 'firefox', 'code', 'gnome-calculator')."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {"name": {"type": "string"}},
+                "required": ["name"],
+                "additionalProperties": False,
+            },
+            func=system.open_app,
         ),
     ]
 

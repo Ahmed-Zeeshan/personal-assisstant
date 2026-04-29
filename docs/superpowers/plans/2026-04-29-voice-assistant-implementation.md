@@ -1018,12 +1018,16 @@ def build_registry(*, policy: SafetyPolicy) -> list[ToolSpec]:
         ),
         ToolSpec(
             name="create_file",
-            description="Create a text file at `path` with optional `content`.",
+            description=(
+                "Create a text file at `path` with optional `content`. "
+                "If the file already exists, set `confirmed=true` to overwrite."
+            ),
             parameters={
                 "type": "object",
                 "properties": {
                     "path": {"type": "string"},
                     "content": {"type": "string", "default": ""},
+                    "confirmed": {"type": "boolean", "default": False},
                 },
                 "required": ["path"],
             },
@@ -2055,12 +2059,16 @@ def build_registry(
         ),
         ToolSpec(
             name="create_file",
-            description="Create a text file at `path` with optional `content`.",
+            description=(
+                "Create a text file at `path` with optional `content`. "
+                "If the file already exists, set `confirmed=true` to overwrite."
+            ),
             parameters={
                 "type": "object",
                 "properties": {
                     "path": {"type": "string"},
                     "content": {"type": "string", "default": ""},
+                    "confirmed": {"type": "boolean", "default": False},
                 },
                 "required": ["path"],
             },
@@ -2298,12 +2306,16 @@ def build_registry(
         ),
         ToolSpec(
             name="create_file",
-            description="Create a text file at `path` with optional `content`.",
+            description=(
+                "Create a text file at `path` with optional `content`. "
+                "If the file already exists, set `confirmed=true` to overwrite."
+            ),
             parameters={
                 "type": "object",
                 "properties": {
                     "path": {"type": "string"},
                     "content": {"type": "string", "default": ""},
+                    "confirmed": {"type": "boolean", "default": False},
                 },
                 "required": ["path"],
             },

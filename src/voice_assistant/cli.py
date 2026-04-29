@@ -58,8 +58,41 @@ def main() -> None:
                 log.exception("error in handle")
                 print(f"[error: {e}]")
     else:
-        # Audio mode wired up in Task 13. For now, fail clearly.
-        raise SystemExit("Audio mode not yet implemented. Use --text.")
+        from voice_assistant.audio_input import HotkeyListener, record_until_silence
+        from voice_assistant.stt import Transcriber
+        from voice_assistant.tts import Speaker
+
+        listener = HotkeyListener(cfg.audio.hotkey)
+        transcriber = Transcriber(
+            model_name=cfg.stt.model, language=cfg.stt.language
+        )
+        speaker = Speaker(voice=cfg.tts.voice)
+
+        print(f"voice-assistant ready. Press {cfg.audio.hotkey} to talk.")
+        while True:
+            try:
+                listener.wait_for_press()
+            except KeyboardInterrupt:
+                print()
+                return
+            print("listening...")
+            try:
+                audio = record_until_silence(
+                    silence_seconds=cfg.audio.silence_seconds
+                )
+                text = transcriber.transcribe(audio).strip()
+                if not text:
+                    print("(nothing heard)")
+                    continue
+                print(f"you: {text}")
+                reply = orch.handle(text)
+                print(f"assistant: {reply}")
+                speaker.speak(reply)
+            except KeyboardInterrupt:
+                raise
+            except Exception as e:
+                log.exception("error in audio loop")
+                print(f"[error: {e}]")
 
 
 if __name__ == "__main__":

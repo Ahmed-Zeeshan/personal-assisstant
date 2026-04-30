@@ -135,3 +135,26 @@ def test_wizard_writes_env_with_mode_0600(tmp_path, monkeypatch):
 
     mode = oct(env_path.stat().st_mode & 0o777)
     assert mode == "0o600"
+
+
+import subprocess
+
+
+def test_cli_setup_flag_runs_wizard(tmp_path, monkeypatch):
+    config_path = tmp_path / "config.yaml"
+    env_path = tmp_path / ".env"
+    inputs = iter(["1", "", "", ""])
+    passwords = iter(["sk-ant-test"])
+    monkeypatch.setattr("builtins.input", lambda *_: next(inputs))
+    monkeypatch.setattr("getpass.getpass", lambda *_: next(passwords))
+    monkeypatch.setattr(
+        "voice_assistant.setup_wizard.run_wizard",
+        lambda **kw: run_wizard(config_path=config_path, env_path=env_path, force=True),
+    )
+    monkeypatch.setattr("sys.argv", ["voice-assistant", "--setup", "--force"])
+
+    from voice_assistant.cli import main
+    main()
+
+    assert config_path.exists()
+    assert env_path.exists()

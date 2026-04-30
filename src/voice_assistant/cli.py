@@ -19,11 +19,31 @@ def main() -> None:
         "--config", type=Path, default=Path("config.yaml"),
         help="Path to config file (default: ./config.yaml)",
     )
-    parser.add_argument(
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
         "--text", action="store_true",
         help="Text mode: read prompts from stdin, no audio.",
     )
+    mode.add_argument(
+        "--setup", action="store_true",
+        help="Run interactive setup wizard (writes config.yaml and .env).",
+    )
+    parser.add_argument(
+        "--force", action="store_true",
+        help="With --setup: overwrite an existing config without prompting.",
+    )
     args = parser.parse_args()
+
+    if args.setup:
+        from pathlib import Path as _P
+        from voice_assistant.setup_wizard import run_wizard
+        home = _P.home() / ".voice-assistant"
+        run_wizard(
+            config_path=home / "config.yaml",
+            env_path=home / ".env",
+            force=args.force,
+        )
+        return
 
     load_dotenv()
     cfg = load_config(args.config)

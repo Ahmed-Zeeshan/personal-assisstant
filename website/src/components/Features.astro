@@ -1,0 +1,16 @@
+---
+import { site } from '../data/site';
+---
+<section id="features" class="container-page py-24 md:py-32">
+  <h2 class="text-h2-fluid font-bold reveal">Everything you need. Nothing you don't.</h2>
+  <p class="mt-4 text-muted max-w-prose-narrow reveal">Six built-in tools, each with a tight surface area and explicit safety rules.</p>
+
+  <ul class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {site.features.map((f) => (
+      <li class="reveal rounded-xl border border-border bg-surface p-6 hover:border-accent/40 transition-colors">
+        <h3 class="font-semibold text-fg">{f.title}</h3>
+        <p class="mt-2 text-sm text-muted leading-6">{f.body}</p>
+      </li>
+    ))}
+  </ul>
+</section>

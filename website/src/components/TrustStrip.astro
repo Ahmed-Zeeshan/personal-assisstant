@@ -1,0 +1,11 @@
+---
+import { site } from '../data/site';
+---
+<section class="border-y border-border bg-surface/40">
+  <div class="container-page py-8 flex flex-wrap items-center justify-center gap-x-10 gap-y-3 text-sm">
+    <span class="text-muted">{site.trust.label}</span>
+    {site.trust.providers.map((p) => (
+      <span class="font-semibold text-fg">{p}</span>
+    ))}
+  </div>
+</section>

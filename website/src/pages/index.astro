@@ -2,6 +2,8 @@
 import Base from '../layouts/Base.astro';
 import Nav from '../components/Nav.astro';
 import Hero from '../components/Hero.astro';
+import TrustStrip from '../components/TrustStrip.astro';
+import Features from '../components/Features.astro';
 import { site } from '../data/site';
 ---
 <Base title={`${site.brand} — talk to your computer`} description={site.subhead}>
@@ -9,5 +11,7 @@ import { site } from '../data/site';
   <Nav />
   <main class="pt-16">
     <Hero />
+    <TrustStrip />
+    <Features />
   </main>
 </Base>

@@ -90,12 +90,21 @@ def render_env(provider: Provider, value: str, *, existing: str) -> str:
 
 
 import getpass
+import os
+import sys
 
 DEFAULT_MODELS: dict[Provider, str] = {
     "anthropic": "claude-sonnet-4-6",
     "openai":    "gpt-4o",
     "gemini":    "gemini-1.5-pro",
     "ollama":    "llama3.1:8b",
+}
+
+_PROVIDER_LABELS: dict[Provider, str] = {
+    "anthropic": "Anthropic Claude",
+    "openai":    "OpenAI GPT",
+    "gemini":    "Google Gemini",
+    "ollama":    "Ollama (local)",
 }
 
 _PROVIDER_MENU: list[tuple[Provider, str]] = [
@@ -106,6 +115,89 @@ _PROVIDER_MENU: list[tuple[Provider, str]] = [
 ]
 
 DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434"
+
+
+def _supports_color() -> bool:
+    """Heuristic: enable ANSI colour iff stdout is a TTY and NO_COLOR is unset."""
+    if os.environ.get("NO_COLOR"):
+        return False
+    if not sys.stdout.isatty():
+        return False
+    return True
+
+
+class _C:
+    """ANSI colour helpers that no-op on non-TTY stdout."""
+    @staticmethod
+    def _wrap(code: str, text: str) -> str:
+        return f"\033[{code}m{text}\033[0m" if _supports_color() else text
+
+    @classmethod
+    def bold(cls, t: str) -> str:    return cls._wrap("1", t)
+    @classmethod
+    def dim(cls, t: str) -> str:     return cls._wrap("2", t)
+    @classmethod
+    def violet(cls, t: str) -> str:  return cls._wrap("38;5;141", t)
+    @classmethod
+    def green(cls, t: str) -> str:   return cls._wrap("32", t)
+    @classmethod
+    def cyan(cls, t: str) -> str:    return cls._wrap("36", t)
+
+
+def _print_welcome_banner() -> None:
+    """Polished wizard intro: title, brief subtitle, and a hairline separator."""
+    width = 56
+    bar = "─" * width
+    print()
+    print(_C.violet("╭" + bar + "╮"))
+    title = "voice-assistant — setup".center(width)
+    sub   = "Pick an LLM, paste your key, you're done.".center(width)
+    print(_C.violet("│") + _C.bold(title) + _C.violet("│"))
+    print(_C.violet("│") + _C.dim(sub) + _C.violet("│"))
+    print(_C.violet("╰" + bar + "╯"))
+    print()
+
+
+def _print_completion_banner(answers: "WizardAnswers", config_path: Path, env_path: Path) -> None:
+    """Polished post-wizard summary card with the configured choices and next steps."""
+    width = 56
+    bar = "─" * width
+
+    def _row(label: str, value: str) -> str:
+        # Pad to fit inside the box. Account for ANSI escape codes in length math.
+        body = f"  {label}{value}"
+        pad = max(0, width - len(body))
+        return _C.violet("│") + _C.dim(f"  {label}") + value + " " * pad + _C.violet("│")
+
+    provider_label = _PROVIDER_LABELS[answers.provider]
+    secret_label = "API key" if answers.provider != "ollama" else "Base URL"
+
+    print()
+    print(_C.violet("╭" + bar + "╮"))
+    title = (_C.green("✓ ") + _C.bold("voice-assistant configured")).ljust(width + len(_C.green("")) - 0)
+    # Centred title row (manual padding because of ANSI codes)
+    raw_title = "✓ voice-assistant configured"
+    pad = (width - len(raw_title)) // 2
+    print(_C.violet("│") + " " * pad + _C.green("✓ ") + _C.bold("voice-assistant configured") + " " * (width - pad - len(raw_title)) + _C.violet("│"))
+    print(_C.violet("│") + " " * width + _C.violet("│"))
+    print(_row("Provider:  ", provider_label))
+    print(_row("Model:     ", answers.model))
+    print(_row("Hotkey:    ", answers.hotkey))
+    print(_C.violet("│") + " " * width + _C.violet("│"))
+    print(_row("Config:    ", str(config_path)))
+    print(_row(f"{secret_label}:   ", str(env_path)))
+    print(_C.violet("│") + " " * width + _C.violet("│"))
+    next_hdr = "  What's next:"
+    print(_C.violet("│") + _C.bold(next_hdr) + " " * (width - len(next_hdr)) + _C.violet("│"))
+    bullets = [
+        "    • Run:  voice-assistant",
+        f"    • Press {answers.hotkey} to talk",
+        "    • Switch provider:  voice-assistant --setup",
+    ]
+    for b in bullets:
+        print(_C.violet("│") + b + " " * (width - len(b)) + _C.violet("│"))
+    print(_C.violet("╰" + bar + "╯"))
+    print()
 
 
 def _prompt_provider() -> Provider:
@@ -154,8 +246,7 @@ def run_wizard(
             print("setup skipped, existing config kept")
             return
 
-    print("Voice-assistant setup")
-    print("─────────────────────")
+    _print_welcome_banner()
 
     try:
         provider = _prompt_provider()
@@ -200,6 +291,4 @@ def run_wizard(
     except OSError:
         pass  # Windows / non-POSIX
 
-    print(f"\n✓ wrote {config_path}")
-    print(f"✓ wrote {env_path} (mode 0600)")
-    print("\nRun:  voice-assistant")
+    _print_completion_banner(answers, config_path, env_path)

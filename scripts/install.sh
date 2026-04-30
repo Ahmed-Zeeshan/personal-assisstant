@@ -84,12 +84,18 @@ case ":$PATH:" in
 esac
 
 if [ "${SKIP_SETUP:-}" != "1" ]; then
-  say "running setup wizard"
-  if ! "$VA_HOME/.venv/bin/voice-assistant" --setup --force; then
-    warn "setup wizard exited non-zero; re-run later with: voice-assistant --setup"
+  if [ -c /dev/tty ]; then
+    # When the script is piped through `curl ... | bash`, stdin is the curl
+    # pipe and the wizard's input()/getpass() can't reach the user. Redirect
+    # stdin from /dev/tty so the wizard sees the actual terminal.
+    say "running setup wizard"
+    if ! "$VA_HOME/.venv/bin/voice-assistant" --setup --force </dev/tty; then
+      warn "setup wizard exited non-zero; re-run later with: voice-assistant --setup"
+    fi
+  else
+    warn "no terminal available — skipping setup wizard."
+    warn "Run later in a real terminal: voice-assistant --setup"
   fi
 else
   say "skipping setup wizard (SKIP_SETUP=1)"
 fi
-
-say "done. Run: voice-assistant"

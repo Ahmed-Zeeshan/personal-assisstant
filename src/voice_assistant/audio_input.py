@@ -3,6 +3,7 @@ import logging
 import queue
 import threading
 import time
+from collections.abc import Callable
 import numpy as np
 import sounddevice as sd
 from pynput import keyboard
@@ -24,9 +25,18 @@ def detect_silence(samples: np.ndarray, threshold: float = 0.01) -> bool:
 def record_until_silence(
     silence_seconds: float = 1.5,
     max_seconds: float = 15.0,
+    *,
+    level_callback: Callable[[float], None] | None = None,
 ) -> AudioBuffer:
     """Record from default mic until `silence_seconds` of quiet (after first
-    speech) or until `max_seconds` elapses."""
+    speech) or until `max_seconds` elapses.
+
+    Args:
+        silence_seconds: Seconds of silence before stopping.
+        max_seconds: Hard cutoff in seconds.
+        level_callback: Optional keyword-only callback invoked per audio chunk
+            with the current RMS level normalised to 0..1.
+    """
     q: queue.Queue[np.ndarray] = queue.Queue()
 
     def cb(indata, frames, time_info, status):
@@ -56,6 +66,9 @@ def record_until_silence(
             except queue.Empty:
                 continue
             chunks.append(block)
+            if level_callback is not None:
+                rms = float(np.sqrt(np.mean(block.astype("float32") ** 2)))
+                level_callback(min(1.0, rms))
             if detect_silence(block):
                 silence_run += 1
                 if saw_speech and silence_run >= silence_blocks_needed:

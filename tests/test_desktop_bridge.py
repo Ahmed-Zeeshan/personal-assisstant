@@ -1,7 +1,9 @@
 from __future__ import annotations
-from pathlib import Path
+
 import os
+
 import pytest
+
 from voice_assistant.desktop.bridge import Bridge
 from voice_assistant.desktop.events import EventBus
 

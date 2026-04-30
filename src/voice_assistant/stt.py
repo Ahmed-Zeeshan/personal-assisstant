@@ -5,9 +5,12 @@ This contract is enforced at the AudioBuffer boundary so silent
 miscompiled audio cannot reach the model.
 """
 from __future__ import annotations
+
 import logging
+
 import numpy as np
 from faster_whisper import WhisperModel
+
 from voice_assistant.audio_types import AudioBuffer
 
 log = logging.getLogger(__name__)

@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+
 from voice_assistant.logging_setup import configure_logging
 
 

@@ -1,4 +1,5 @@
 from unittest.mock import MagicMock
+
 from voice_assistant.brain import Brain, ContentChunk, ToolCallReady
 
 

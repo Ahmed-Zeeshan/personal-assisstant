@@ -1,7 +1,9 @@
-from pathlib import Path
 import textwrap
+from pathlib import Path
+
 import pytest
-from voice_assistant.config import load_config, Config
+
+from voice_assistant.config import Config, load_config
 
 
 def write(tmp_path: Path, body: str) -> Path:

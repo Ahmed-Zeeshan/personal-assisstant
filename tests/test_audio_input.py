@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
-from voice_assistant.audio_input import HotkeyListener, detect_silence
 
+from voice_assistant.audio_input import HotkeyListener, detect_silence
 
 # ---------- detect_silence ----------
 

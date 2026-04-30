@@ -1,16 +1,23 @@
 from __future__ import annotations
+
 import functools
 import shutil
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any, TypeVar
+
 from pydantic import ValidationError
-from voice_assistant.safety import SafetyPolicy, SafetyError
+
+from voice_assistant.safety import SafetyError, SafetyPolicy
 from voice_assistant.tools.schema import ToolResult
 
+_F = TypeVar("_F", bound=Callable[..., ToolResult])
 
-def _wrap(fn):
+
+def _wrap(fn: _F) -> _F:
     """Convert SafetyError, OSError, and ValidationError to ToolResult(ok=False)."""
     @functools.wraps(fn)
-    def inner(*args, **kwargs):
+    def inner(*args: Any, **kwargs: Any) -> ToolResult:
         try:
             return fn(*args, **kwargs)
         except SafetyError as e:
@@ -19,7 +26,7 @@ def _wrap(fn):
             return ToolResult(ok=False, summary="filesystem error", error=str(e))
         except ValidationError as e:
             return ToolResult(ok=False, summary="bad result construction", error=str(e))
-    return inner
+    return inner  # type: ignore[return-value]
 
 
 @_wrap

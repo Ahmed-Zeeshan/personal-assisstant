@@ -1,7 +1,10 @@
 from __future__ import annotations
+
 import copy
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, model_validator
 
 
@@ -19,7 +22,7 @@ class ToolResult(BaseModel):
     data: dict[str, Any] | None = None
 
     @model_validator(mode="after")
-    def _check_error_on_failure(self) -> "ToolResult":
+    def _check_error_on_failure(self) -> ToolResult:
         if not self.ok and self.error is None:
             raise ValueError("error must be set when ok is False")
         return self

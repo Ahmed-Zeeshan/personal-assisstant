@@ -1,15 +1,18 @@
 from __future__ import annotations
+
 import argparse
 import logging
 import threading
 from pathlib import Path
+
 from dotenv import load_dotenv
-from voice_assistant.config import load_config
-from voice_assistant.logging_setup import configure_logging
+
+from voice_assistant.app import Orchestrator
 from voice_assistant.brain import Brain
+from voice_assistant.config import Config, load_config
+from voice_assistant.logging_setup import configure_logging
 from voice_assistant.safety import SafetyPolicy
 from voice_assistant.tools import build_registry
-from voice_assistant.app import Orchestrator
 
 log = logging.getLogger(__name__)
 
@@ -32,9 +35,8 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.setup:
-        from pathlib import Path as _P
         from voice_assistant.setup_wizard import run_wizard
-        home = _P.home() / ".voice-assistant"
+        home = Path.home() / ".voice-assistant"
         run_wizard(
             config_path=home / "config.yaml",
             env_path=home / ".env",
@@ -85,7 +87,8 @@ def main() -> None:
 
 def _gui_available() -> bool:
     """Heuristic: do we have a graphical session AND PyWebView AND the bundle?"""
-    import os, sys
+    import os
+    import sys
     if os.environ.get("VA_NO_GUI"):
         return False
     if sys.platform.startswith("linux"):
@@ -103,18 +106,17 @@ def _gui_available() -> bool:
     return True
 
 
-def _run_gui_mode(orch, cfg, config_path: Path) -> None:
+def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
     """GUI runtime: hotkey + audio + STT + orch + TTS, all event-driven."""
-    from pathlib import Path as _P
+    from voice_assistant.audio_input import HotkeyListener, record_until_silence
     from voice_assistant.desktop.bridge import Bridge
     from voice_assistant.desktop.events import EventBus
     from voice_assistant.desktop.window import DesktopApp
-    from voice_assistant.audio_input import HotkeyListener, record_until_silence
     from voice_assistant.stt import Transcriber
     from voice_assistant.tts import Speaker
 
     bus = EventBus()
-    home = _P.home() / ".voice-assistant"
+    home = Path.home() / ".voice-assistant"
 
     transcriber = None
     speaker = None
@@ -129,7 +131,7 @@ def _run_gui_mode(orch, cfg, config_path: Path) -> None:
 
     # Holder for the active orchestrator. Settings save can swap this out so
     # provider/model/key changes take effect without a restart.
-    state = {"orch": orch, "cfg": cfg}
+    active_orch: list[Orchestrator] = [orch]  # mutable single-item list for closure capture
 
     def _reload_brain() -> None:
         """Re-read config + .env and rebuild the orchestrator with the new brain."""
@@ -144,11 +146,10 @@ def _run_gui_mode(orch, cfg, config_path: Path) -> None:
         new_gmail = None
         if new_cfg.gmail and new_cfg.gmail.credentials_file.exists():
             new_gmail = new_cfg.gmail.credentials_file
-        state["orch"] = Orchestrator(
+        active_orch[0] = Orchestrator(
             brain=new_brain,
             tools=build_registry(policy=new_policy, gmail_credentials_file=new_gmail),
         )
-        state["cfg"] = new_cfg
         log.info("orchestrator reloaded with provider=%s model=%s",
                  new_cfg.brain.provider, new_cfg.brain.model)
 
@@ -158,7 +159,7 @@ def _run_gui_mode(orch, cfg, config_path: Path) -> None:
         buf = ""
         try:
             bus.publish({"type": "transcript_start", "speaker": "assistant"})
-            for ev in state["orch"].handle_stream(text):
+            for ev in active_orch[0].handle_stream(text):
                 if ev["type"] == "assistant_delta":
                     buf += ev["text"]
                     bus.publish({"type": "transcript_chunk", "text": ev["text"]})
@@ -236,7 +237,7 @@ def _run_gui_mode(orch, cfg, config_path: Path) -> None:
     DesktopApp(bridge=bridge, bus=bus).run()
 
 
-def _run_text_mode(orch) -> None:
+def _run_text_mode(orch: Orchestrator) -> None:
     print("voice-assistant text mode. Ctrl-D to exit.")
     while True:
         try:
@@ -258,7 +259,7 @@ def _run_text_mode(orch) -> None:
             print(f"[error: {e}]")
 
 
-def _run_voice_mode(orch, cfg) -> None:
+def _run_voice_mode(orch: Orchestrator, cfg: Config) -> None:
     from voice_assistant.audio_input import HotkeyListener, record_until_silence
     from voice_assistant.stt import Transcriber
     from voice_assistant.tts import Speaker

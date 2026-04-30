@@ -1,10 +1,14 @@
 from __future__ import annotations
+
 import json
 import logging
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
-from litellm import completion
+
 import litellm
+from litellm import completion
+
 from voice_assistant.tools.schema import ToolSpec
 
 if TYPE_CHECKING:
@@ -47,7 +51,7 @@ class ContentChunk:
 @dataclass
 class ToolCallReady:
     name: str
-    args: dict
+    args: dict[str, Any]
     id: str
 
 
@@ -55,7 +59,7 @@ class BrainError(Exception):
     """Raised when the brain cannot produce a usable response."""
 
 
-def _build_system_prompt(user: "UserConfig | None") -> str:  # type: ignore[name-defined]  # noqa: F821
+def _build_system_prompt(user: UserConfig | None) -> str:
     """Build an identity-aware, action-oriented system prompt."""
     address_line = ""
     if user and user.name:
@@ -82,7 +86,7 @@ def _build_system_prompt(user: "UserConfig | None") -> str:  # type: ignore[name
 class Brain:
     provider: str
     model: str
-    user: "UserConfig | None" = field(default=None)  # type: ignore[name-defined]  # noqa: F821
+    user: UserConfig | None = field(default=None)
     system_prompt: str = field(default="")  # kept for backward compat; ignored if user is set
     tool_choice: str = "auto"
 
@@ -146,14 +150,18 @@ class Brain:
 
         return PlainText(content=msg.content or "")
 
-    def complete_stream(self, messages: list[dict], tools: list):
+    def complete_stream(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[Any],
+    ) -> Iterator[ContentChunk | ToolCallReady]:
         """Stream a completion. Yields ContentChunk for text and ToolCallReady when a tool call completes.
 
         Tool-call argument JSON is accumulated across chunks (LiteLLM exposes deltas).
         """
         full_messages = list(messages)
         if not full_messages or full_messages[0].get("role") != "system":
-            full_messages = [{"role": "system", "content": self._get_system_prompt()}] + full_messages
+            full_messages = [{"role": "system", "content": self._get_system_prompt()}, *full_messages]
 
         tool_schemas = None
         if tools:
@@ -167,7 +175,7 @@ class Brain:
         )
 
         # Per-tool-call accumulators keyed by index
-        pending: dict[int, dict] = {}
+        pending: dict[int, dict[str, Any]] = {}
 
         for chunk in response:
             delta = chunk.choices[0].delta

@@ -1,12 +1,15 @@
 from __future__ import annotations
+
 import logging
 import queue
 import threading
 import time
 from collections.abc import Callable
+
 import numpy as np
 import sounddevice as sd
 from pynput import keyboard
+
 from voice_assistant.audio_types import AudioBuffer
 
 log = logging.getLogger(__name__)
@@ -39,7 +42,7 @@ def record_until_silence(
     """
     q: queue.Queue[np.ndarray] = queue.Queue()
 
-    def cb(indata, frames, time_info, status):
+    def cb(indata: np.ndarray, frames: int, time_info: object, status: object) -> None:
         if status:
             log.warning("audio status: %s", status)
         q.put(indata.copy().flatten())

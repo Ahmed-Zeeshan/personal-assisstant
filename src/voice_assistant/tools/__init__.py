@@ -1,13 +1,15 @@
 from __future__ import annotations
+
 import inspect
+from collections.abc import Callable
 from functools import partial
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, cast
+
 from voice_assistant.safety import SafetyPolicy
-from voice_assistant.tools.schema import ToolSpec
 from voice_assistant.tools import filesystem as fs
-from voice_assistant.tools import gmail
-from voice_assistant.tools import system
+from voice_assistant.tools import gmail, system
+from voice_assistant.tools.schema import ToolResult, ToolSpec
 
 
 def _bind_filesystem_tool(
@@ -187,23 +189,28 @@ def build_registry(
 
     try:
         from voice_assistant.tools.web import (
-            web_search, web_fetch, WEB_SEARCH_SCHEMA, WEB_FETCH_SCHEMA,
+            WEB_FETCH_SCHEMA,
+            WEB_SEARCH_SCHEMA,
+            web_fetch,
+            web_search,
         )
         if web_search is not None and WEB_SEARCH_SCHEMA is not None:
+            fn_s = cast(dict[str, Any], WEB_SEARCH_SCHEMA.get("function", {}))
             specs.append(
                 ToolSpec(
                     name="web_search",
-                    description=WEB_SEARCH_SCHEMA["function"]["description"],
-                    parameters=WEB_SEARCH_SCHEMA["function"]["parameters"],
+                    description=fn_s["description"],
+                    parameters=fn_s["parameters"],
                     func=lambda **kw: _wrap_web_result(web_search(**kw)),
                 )
             )
         if web_fetch is not None and WEB_FETCH_SCHEMA is not None:
+            fn_f = cast(dict[str, Any], WEB_FETCH_SCHEMA.get("function", {}))
             specs.append(
                 ToolSpec(
                     name="web_fetch",
-                    description=WEB_FETCH_SCHEMA["function"]["description"],
-                    parameters=WEB_FETCH_SCHEMA["function"]["parameters"],
+                    description=fn_f["description"],
+                    parameters=fn_f["parameters"],
                     func=lambda **kw: _wrap_web_result(web_fetch(**kw)),
                 )
             )
@@ -213,9 +220,10 @@ def build_registry(
     return specs
 
 
-def _wrap_web_result(result: object) -> "ToolResult":  # type: ignore[name-defined]  # noqa: F821
+def _wrap_web_result(result: object) -> ToolResult:
     """Wrap a web tool result (list or dict) into a ToolResult."""
     import json
+
     from voice_assistant.tools.schema import ToolResult
     if isinstance(result, (list, dict)):
         text = json.dumps(result, ensure_ascii=False)

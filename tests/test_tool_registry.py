@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from voice_assistant.safety import SafetyPolicy
 from voice_assistant.tools import build_registry
 
@@ -71,7 +72,7 @@ def test_delete_path_schema_has_no_default_for_confirmed(sandbox: Path):
 
 
 def test_registry_includes_send_email_when_credentials_present(sandbox: Path, tmp_path):
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import MagicMock, patch
     pol = SafetyPolicy(
         allowed_roots=[sandbox],
         destructive_requires_confirmation=True,

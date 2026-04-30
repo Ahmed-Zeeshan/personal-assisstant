@@ -1,11 +1,17 @@
 # tests/test_setup_wizard.py
+import sys
 from pathlib import Path
+
+import pytest
 import yaml
-from voice_assistant.setup_wizard import WizardAnswers, render_config
+
 from voice_assistant.config import Config
 from voice_assistant.setup_wizard import (
     PROVIDER_ENV_VAR,
+    WizardAnswers,
+    render_config,
     render_env,
+    run_wizard,
 )
 
 
@@ -67,12 +73,6 @@ def test_render_env_for_ollama_writes_base_url():
     env = render_env("ollama", "http://localhost:11434", existing="")
     assert "OLLAMA_BASE_URL=http://localhost:11434" in env
     assert "ANTHROPIC_API_KEY" not in env
-
-
-import os
-import sys
-import pytest
-from voice_assistant.setup_wizard import run_wizard
 
 
 def _patch_io(monkeypatch, inputs: list[str], passwords: list[str]):
@@ -141,7 +141,6 @@ def test_wizard_writes_env_with_mode_0600(tmp_path, monkeypatch):
     assert mode == "0o600"
 
 
-import subprocess
 
 
 def test_cli_setup_flag_runs_wizard(tmp_path, monkeypatch):

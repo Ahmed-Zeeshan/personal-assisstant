@@ -1,10 +1,10 @@
 from __future__ import annotations
+
 import json
 import logging
-import threading
+from collections.abc import Callable
 from importlib import resources
-from pathlib import Path
-from typing import Callable, Any
+from typing import Any
 
 from voice_assistant.desktop.bridge import Bridge
 from voice_assistant.desktop.events import EventBus
@@ -71,7 +71,8 @@ class DesktopApp:
             self._bus.publish({"type": "config", "cfg": self._bridge.get_config()})
             self._bus.publish({"type": "status", "value": "idle"})
 
-        self._window.events.loaded += _on_loaded
+        if self._window is not None:
+            self._window.events.loaded += _on_loaded
 
         # Run the GUI event loop on the calling thread (must be the main thread on macOS).
         webview.start(debug=False)

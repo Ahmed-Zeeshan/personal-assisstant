@@ -1,7 +1,9 @@
 from __future__ import annotations
+
 import shlex
 import subprocess
 import webbrowser
+
 from voice_assistant.tools.schema import ToolResult
 
 

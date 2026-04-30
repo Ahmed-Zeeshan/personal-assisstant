@@ -1,9 +1,13 @@
 from __future__ import annotations
-import yaml
-from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Literal
 
+import getpass
+import os
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Literal
+
+import yaml
 
 Provider = Literal["anthropic", "openai", "gemini", "ollama"]
 
@@ -60,7 +64,7 @@ def render_config(a: WizardAnswers) -> str:
     )
     user_block = ""
     if a.user_name or a.user_address_as != "none":
-        d: dict = {"user": {"name": a.user_name, "address_as": a.user_address_as}}
+        d: dict[str, Any] = {"user": {"name": a.user_name, "address_as": a.user_address_as}}
         if a.user_title:
             d["user"]["title"] = a.user_title
         user_block = "\n" + yaml.safe_dump(d, sort_keys=False, default_flow_style=False)
@@ -99,10 +103,6 @@ def render_env(provider: Provider, value: str, *, existing: str) -> str:
     # Always end with a newline.
     return "\n".join(keep) + "\n"
 
-
-import getpass
-import os
-import sys
 
 DEFAULT_MODELS: dict[Provider, str] = {
     "anthropic": "claude-sonnet-4-6",
@@ -197,7 +197,7 @@ def _print_welcome_banner() -> None:
     print()
 
 
-def _print_completion_banner(answers: "WizardAnswers", config_path: Path, env_path: Path) -> None:
+def _print_completion_banner(answers: WizardAnswers, config_path: Path, env_path: Path) -> None:
     """Polished post-wizard summary card with the configured choices and next steps."""
     width = 56
     bar = "─" * width
@@ -213,7 +213,6 @@ def _print_completion_banner(answers: "WizardAnswers", config_path: Path, env_pa
 
     print()
     print(_C.violet("╭" + bar + "╮"))
-    title = (_C.green("✓ ") + _C.bold("voice-assistant configured")).ljust(width + len(_C.green("")) - 0)
     # Centred title row (manual padding because of ANSI codes)
     raw_title = "✓ voice-assistant configured"
     pad = (width - len(raw_title)) // 2
@@ -330,7 +329,7 @@ def run_wizard(
                 user_title = _prompt_with_default("   Title", "Sir")
     except (KeyboardInterrupt, EOFError):
         print("\nsetup cancelled, no files written")
-        raise SystemExit(130)
+        raise SystemExit(130) from None
 
     answers = WizardAnswers(
         provider=provider,

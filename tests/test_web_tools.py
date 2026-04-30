@@ -1,5 +1,6 @@
-from unittest.mock import patch, MagicMock
-from voice_assistant.tools.web import web_search, web_fetch
+from unittest.mock import MagicMock, patch
+
+from voice_assistant.tools.web import web_fetch, web_search
 
 
 def test_web_search_returns_top_results():

@@ -1,9 +1,14 @@
 from unittest.mock import MagicMock
+
 from voice_assistant.brain import (
-    Brain, Message, ToolCall, PlainText, _build_system_prompt,
+    Brain,
+    Message,
+    PlainText,
+    ToolCall,
+    _build_system_prompt,
 )
 from voice_assistant.config import UserConfig
-from voice_assistant.tools.schema import ToolSpec, ToolResult
+from voice_assistant.tools.schema import ToolResult, ToolSpec
 
 
 def fake_tool() -> list[ToolSpec]:
@@ -96,9 +101,13 @@ def test_brain_handles_malformed_tool_call_args_gracefully(monkeypatch):
 
 def test_brain_logs_warning_on_multiple_tool_calls(monkeypatch, caplog):
     import logging
-    tc1 = MagicMock(); tc1.id = "c1"; tc1.function.name = "create_folder"
+    tc1 = MagicMock()
+    tc1.id = "c1"
+    tc1.function.name = "create_folder"
     tc1.function.arguments = '{"path": "/tmp/a"}'
-    tc2 = MagicMock(); tc2.id = "c2"; tc2.function.name = "create_folder"
+    tc2 = MagicMock()
+    tc2.id = "c2"
+    tc2.function.name = "create_folder"
     tc2.function.arguments = '{"path": "/tmp/b"}'
     fake = make_litellm_response(tool_calls=[tc1, tc2])
     monkeypatch.setattr("voice_assistant.brain.completion", lambda **kw: fake)

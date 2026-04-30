@@ -4,13 +4,15 @@ Voice models are cached at ~/.cache/piper. First use of a new voice
 downloads both the .onnx model and the .onnx.json config.
 """
 from __future__ import annotations
+
 import logging
 import wave
 from pathlib import Path
-import sounddevice as sd
+
 import numpy as np
-from piper.voice import PiperVoice
+import sounddevice as sd
 from piper.download_voices import download_voice
+from piper.voice import PiperVoice
 
 log = logging.getLogger(__name__)
 

@@ -1,8 +1,9 @@
-import os
 import time
 from pathlib import Path
+
 import pytest
-from voice_assistant.safety import SafetyPolicy, SafetyError
+
+from voice_assistant.safety import SafetyError, SafetyPolicy
 
 
 def make_policy(roots: list, rate: int = 5, requires_confirmation: bool = True) -> SafetyPolicy:

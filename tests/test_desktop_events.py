@@ -1,4 +1,5 @@
 import time
+
 from voice_assistant.desktop.events import EventBus
 
 
@@ -36,6 +37,6 @@ def test_other_event_types_are_not_throttled():
     bus = EventBus()
     seen = []
     bus.subscribe(lambda e: seen.append(e))
-    for i in range(10):
+    for _i in range(10):
         bus.publish({"type": "status", "value": "idle"})
     assert len(seen) == 10

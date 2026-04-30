@@ -1,10 +1,13 @@
 from __future__ import annotations
+
 import json
 import logging
+from collections.abc import Iterator
 from dataclasses import dataclass, field
-from typing import Iterator
-from voice_assistant.brain import Brain, Message, PlainText, ToolCall, ContentChunk, ToolCallReady
-from voice_assistant.tools.schema import ToolSpec, ToolResult
+from typing import Any
+
+from voice_assistant.brain import Brain, ContentChunk, Message, PlainText, ToolCall, ToolCallReady
+from voice_assistant.tools.schema import ToolResult, ToolSpec
 
 log = logging.getLogger(__name__)
 
@@ -96,7 +99,7 @@ class Orchestrator:
         log.info("assistant: %s", text)
         return text
 
-    def handle_stream(self, text: str) -> Iterator[dict]:
+    def handle_stream(self, text: str) -> Iterator[dict[str, Any]]:
         """Yield orchestrator events as the brain streams.
 
         Events: dict with "type" in:
@@ -106,7 +109,7 @@ class Orchestrator:
           - "done":            {}
         """
         tool_schemas = [t.to_openai_format() for t in self.tools]
-        messages: list[dict] = [{"role": "user", "content": text}]
+        messages: list[dict[str, Any]] = [{"role": "user", "content": text}]
         for _ in range(5):  # bounded tool-call iterations
             text_buf = ""
             tool_call: ToolCallReady | None = None
@@ -132,7 +135,8 @@ class Orchestrator:
                 result_text = f"Tool error: {exc}"
             yield {"type": "tool_result", "text": result_text}
             # Continue loop: feed result back to brain
-            messages = messages + [
+            messages = [
+                *messages,
                 {"role": "assistant", "content": text_buf or None,
                  "tool_calls": [{"id": tool_call.id, "type": "function",
                                  "function": {"name": tool_call.name,

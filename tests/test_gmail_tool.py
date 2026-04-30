@@ -3,7 +3,8 @@ import os
 import stat
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-from voice_assistant.tools.gmail import send_email, _write_secret
+
+from voice_assistant.tools.gmail import _write_secret, send_email
 
 
 def test_send_email_calls_gmail_api_with_correct_payload(tmp_path):

@@ -1,7 +1,11 @@
 from __future__ import annotations
+
+import logging
 import time
 from collections.abc import Callable
 from typing import Any
+
+log = logging.getLogger(__name__)
 
 
 class EventBus:
@@ -38,4 +42,4 @@ class EventBus:
             try:
                 fn(event)
             except Exception:  # subscriber failure must not crash the bus
-                pass
+                log.debug("event subscriber raised", exc_info=True)

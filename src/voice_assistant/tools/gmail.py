@@ -1,14 +1,18 @@
 """Gmail send_email tool with OAuth2 (gmail.send scope only)."""
 from __future__ import annotations
+
 import base64
 import logging
 import os
 from email.mime.text import MIMEText
 from pathlib import Path
+from typing import Any
+
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+
 from voice_assistant.tools.schema import ToolResult
 
 log = logging.getLogger(__name__)
@@ -27,14 +31,14 @@ def _write_secret(path: Path, data: str) -> None:
     os.replace(str(tmp), str(path))
 
 
-def _build_service(credentials_file: Path):
+def _build_service(credentials_file: Path) -> Any:
     """Load OAuth credentials, refresh or run the install flow as needed."""
     # Token file is written next to the credentials file. Heads-up to the
     # operator: avoid placing credentials in a cloud-synced folder.
     token_path = Path(credentials_file).with_name("oauth-token.json")
     creds: Credentials | None = None
     if token_path.exists():
-        creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)
+        creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)  # type: ignore[no-untyped-call]
 
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
@@ -75,7 +79,7 @@ def send_email(
         return ToolResult(
             ok=True, summary=f"sent email to {to} (id={sent.get('id')})"
         )
-    except Exception as e:
+    except Exception:
         # Detail goes to logs only; the LLM gets a normalized short error.
         log.exception("send_email failed")
         return ToolResult(

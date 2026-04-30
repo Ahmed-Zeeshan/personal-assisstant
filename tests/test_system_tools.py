@@ -1,4 +1,5 @@
 from unittest.mock import patch
+
 from voice_assistant.tools.system import open_app, open_url
 
 

@@ -1,5 +1,9 @@
+import logging
 from pathlib import Path
 from unittest.mock import MagicMock
+
+import pytest
+
 from voice_assistant.app import Orchestrator
 from voice_assistant.brain import PlainText, ToolCall
 from voice_assistant.safety import SafetyPolicy
@@ -48,10 +52,6 @@ def test_unknown_tool_returns_apology(sandbox):
     assert "sorry" in reply.lower()
 
 
-import pytest
-import logging
-
-
 def test_history_state_after_tool_call(sandbox):
     brain = MagicMock()
     target = sandbox / "x"
@@ -70,8 +70,8 @@ def test_history_state_after_tool_call(sandbox):
 
 def test_tool_raising_unexpected_exception_propagates(sandbox):
     """Orchestrator's narrow except is intentional; CLI catches at the loop level."""
-    from voice_assistant.tools.schema import ToolSpec
     from voice_assistant.app import Orchestrator
+    from voice_assistant.tools.schema import ToolSpec
     brain = MagicMock()
 
     def buggy_tool(**kwargs):

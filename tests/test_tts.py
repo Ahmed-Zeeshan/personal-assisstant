@@ -1,6 +1,8 @@
 import wave
 from pathlib import Path
+
 import pytest
+
 from voice_assistant.tts import Speaker
 
 

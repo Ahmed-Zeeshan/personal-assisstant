@@ -1,16 +1,22 @@
 from __future__ import annotations
+
+import logging
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
-import logging
-import os
+
 import yaml
+
 from voice_assistant.config import Config
-from voice_assistant.setup_wizard import (
-    DEFAULT_MODELS, MODELS_BY_PROVIDER, WizardAnswers,
-    render_config, render_env, PROVIDER_ENV_VAR,
-)
 from voice_assistant.desktop.events import EventBus
+from voice_assistant.setup_wizard import (
+    DEFAULT_MODELS,
+    MODELS_BY_PROVIDER,
+    PROVIDER_ENV_VAR,
+    WizardAnswers,
+    render_config,
+    render_env,
+)
 
 log = logging.getLogger(__name__)
 

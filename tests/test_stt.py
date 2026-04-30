@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
-from voice_assistant.stt import Transcriber, AudioBuffer
+
+from voice_assistant.stt import AudioBuffer, Transcriber
 
 
 @pytest.fixture(scope="module")

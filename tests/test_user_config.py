@@ -1,5 +1,7 @@
 from pathlib import Path
+
 import yaml
+
 from voice_assistant.config import Config
 from voice_assistant.setup_wizard import WizardAnswers, render_config
 

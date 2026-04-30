@@ -1,5 +1,6 @@
 import pytest
 from pydantic import ValidationError
+
 from voice_assistant.tools.schema import ToolResult, ToolSpec
 
 

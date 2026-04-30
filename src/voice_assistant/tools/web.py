@@ -1,22 +1,22 @@
 """Web tools: search the web, fetch page content. Network-only — no path scoping needed."""
 from __future__ import annotations
-from typing import Any
+
 from urllib.parse import urlparse
 
 try:
-    from duckduckgo_search import DDGS  # type: ignore
+    from duckduckgo_search import DDGS
 except ImportError:
-    DDGS = None  # type: ignore
+    DDGS = None  # type: ignore[assignment,misc]
 
 try:
-    import httpx  # type: ignore
+    import httpx
 except ImportError:
-    httpx = None  # type: ignore
+    httpx = None  # type: ignore[assignment]
 
 try:
-    import trafilatura  # type: ignore
+    import trafilatura
 except ImportError:
-    trafilatura = None  # type: ignore
+    trafilatura = None  # type: ignore[assignment]
 
 
 def web_search(*, query: str, count: int = 5) -> list[dict[str, str]]:
@@ -56,7 +56,7 @@ def web_fetch(*, url: str, max_chars: int = 8000) -> dict[str, str]:
     html = response.text
     text = trafilatura.extract(html, include_comments=False, include_tables=False) or ""
     metadata = trafilatura.extract_metadata(html)
-    title = (metadata.title if metadata and getattr(metadata, "title", None) else "")
+    title: str = (metadata.title if metadata and getattr(metadata, "title", None) else "") or ""
     if len(text) > max_chars:
         text = text[:max_chars] + "..."
     return {"url": url, "title": title, "text": text}

@@ -103,3 +103,20 @@ def test_followup_tool_call_falls_back_to_summary(sandbox, caplog):
         reply = orch.handle("make x")
     assert "created folder" in reply
     assert any("tool call" in r.message for r in caplog.records)
+
+
+def test_no_gui_flag_runs_text_mode(monkeypatch, tmp_path):
+    """`--no-gui --text` must not regress text mode dispatch."""
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text("""
+brain: { provider: anthropic, model: claude-sonnet-4-6 }
+stt:   { engine: faster-whisper, model: small, language: en }
+tts:   { engine: piper, voice: en_US-amy-medium }
+audio: { trigger: hotkey, hotkey: ctrl+shift+space, silence_seconds: 1.5 }
+safety: { allowed_roots: ["~"], destructive_requires_confirmation: true, delete_rate_per_minute: 5 }
+logging: { level: INFO, file: /tmp/x.log }
+""")
+    monkeypatch.setattr("sys.argv", ["voice-assistant", "--config", str(config_path), "--no-gui"])
+    monkeypatch.setattr("builtins.input", lambda *_: (_ for _ in ()).throw(EOFError()))
+    from voice_assistant.cli import main
+    main()  # exits cleanly on EOF

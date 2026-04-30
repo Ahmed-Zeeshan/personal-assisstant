@@ -28,9 +28,9 @@ export const site = {
     { title: 'Act + Reply', body: 'Run the tool, speak the result.' },
   ],
   install: {
-    macos:   { prereq: 'Requires Python 3.10+ and a microphone.', cmd: 'curl -fsSL https://voice-assistant.example.com/install.sh | bash', run: 'voice-assistant', note: 'The installer asks for your LLM provider and API key. Default hotkey: ctrl+shift+space.' },
-    linux:   { prereq: 'Requires Python 3.10+, portaudio, and espeak-ng.', cmd: 'curl -fsSL https://voice-assistant.example.com/install.sh | bash', run: 'voice-assistant', note: 'The installer asks for your LLM provider and API key. Default hotkey: ctrl+shift+space.' },
-    windows: { prereq: 'Requires Python 3.10+ and a microphone.', cmd: 'iwr -useb https://voice-assistant.example.com/install.ps1 | iex', run: 'voice-assistant', note: 'The installer asks for your LLM provider and API key. Default hotkey: ctrl+shift+space.' },
+    macos:   { prereq: 'Requires Python 3.10+ and a microphone.', cmd: 'curl -fsSL https://personal-assisstant-gamma.vercel.app/install.sh | bash', run: 'voice-assistant', note: 'The installer asks for your LLM provider and API key. Default hotkey: ctrl+shift+space.' },
+    linux:   { prereq: 'Requires Python 3.10+, portaudio, and espeak-ng.', cmd: 'curl -fsSL https://personal-assisstant-gamma.vercel.app/install.sh | bash', run: 'voice-assistant', note: 'The installer asks for your LLM provider and API key. Default hotkey: ctrl+shift+space.' },
+    windows: { prereq: 'Requires Python 3.10+ and a microphone.', cmd: 'iwr -useb https://personal-assisstant-gamma.vercel.app/install.ps1 | iex', run: 'voice-assistant', note: 'The installer asks for your LLM provider and API key. Default hotkey: ctrl+shift+space.' },
   },
   safety: [
     { title: 'Path-scoped filesystem', body: 'Tools refuse paths outside your allowed_roots. Symlink and .. traversal blocked.' },

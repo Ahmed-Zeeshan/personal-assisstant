@@ -10,6 +10,12 @@ class BrainConfig(BaseModel):
     model: str
 
 
+class UserConfig(BaseModel):
+    name: str | None = None
+    address_as: Literal["first_name", "full_name", "title", "none"] = "none"
+    title: str | None = None
+
+
 class STTConfig(BaseModel):
     engine: Literal["faster-whisper"]
     model: str
@@ -60,6 +66,7 @@ class Config(BaseModel):
     safety: SafetyConfig
     gmail: GmailConfig | None = None
     logging: LoggingConfig
+    user: UserConfig = Field(default_factory=UserConfig)
 
 
 def load_config(path: Path) -> Config:

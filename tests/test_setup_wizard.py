@@ -85,7 +85,8 @@ def _patch_io(monkeypatch, inputs: list[str], passwords: list[str]):
 def test_wizard_writes_anthropic_config_and_env(tmp_path, monkeypatch):
     config_path = tmp_path / "config.yaml"
     env_path = tmp_path / ".env"
-    _patch_io(monkeypatch, inputs=["1", "", "", ""], passwords=["sk-ant-test"])
+    # Extra "" at end = identity question default (choice "4" = don't address)
+    _patch_io(monkeypatch, inputs=["1", "", "", "", ""], passwords=["sk-ant-test"])
     run_wizard(config_path=config_path, env_path=env_path)
 
     assert config_path.exists()
@@ -97,7 +98,8 @@ def test_wizard_writes_anthropic_config_and_env(tmp_path, monkeypatch):
 def test_wizard_writes_ollama_with_base_url_and_no_key(tmp_path, monkeypatch):
     config_path = tmp_path / "config.yaml"
     env_path = tmp_path / ".env"
-    _patch_io(monkeypatch, inputs=["4", "", "", "", ""], passwords=[])
+    # Extra "" at end = identity question default
+    _patch_io(monkeypatch, inputs=["4", "", "", "", "", ""], passwords=[])
     run_wizard(config_path=config_path, env_path=env_path)
 
     assert "OLLAMA_BASE_URL=http://localhost:11434" in env_path.read_text()
@@ -119,7 +121,8 @@ def test_wizard_force_overwrites_existing(tmp_path, monkeypatch):
     config_path = tmp_path / "config.yaml"
     env_path = tmp_path / ".env"
     config_path.write_text("# existing\n")
-    _patch_io(monkeypatch, inputs=["1", "", "", ""], passwords=["sk-ant-test"])
+    # Extra "" at end = identity question default
+    _patch_io(monkeypatch, inputs=["1", "", "", "", ""], passwords=["sk-ant-test"])
     run_wizard(config_path=config_path, env_path=env_path, force=True)
 
     assert "provider: anthropic" in config_path.read_text()
@@ -130,7 +133,8 @@ def test_wizard_writes_env_with_mode_0600(tmp_path, monkeypatch):
         pytest.skip("file modes are POSIX-only")
     config_path = tmp_path / "config.yaml"
     env_path = tmp_path / ".env"
-    _patch_io(monkeypatch, inputs=["1", "", "", ""], passwords=["sk-ant-test"])
+    # Extra "" at end = identity question default
+    _patch_io(monkeypatch, inputs=["1", "", "", "", ""], passwords=["sk-ant-test"])
     run_wizard(config_path=config_path, env_path=env_path)
 
     mode = oct(env_path.stat().st_mode & 0o777)
@@ -143,7 +147,8 @@ import subprocess
 def test_cli_setup_flag_runs_wizard(tmp_path, monkeypatch):
     config_path = tmp_path / "config.yaml"
     env_path = tmp_path / ".env"
-    inputs = iter(["1", "", "", ""])
+    # Extra "" at end = identity question default
+    inputs = iter(["1", "", "", "", ""])
     passwords = iter(["sk-ant-test"])
     monkeypatch.setattr("builtins.input", lambda *_: next(inputs))
     monkeypatch.setattr("getpass.getpass", lambda *_: next(passwords))

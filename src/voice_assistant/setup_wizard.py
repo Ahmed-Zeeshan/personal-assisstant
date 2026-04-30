@@ -1,5 +1,6 @@
 from __future__ import annotations
-from dataclasses import dataclass
+import yaml
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
@@ -14,6 +15,9 @@ class WizardAnswers:
     hotkey: str
     allowed_roots: list[Path]
     ollama_base_url: str | None  # only for provider == "ollama"
+    user_name: str | None = None
+    user_address_as: Literal["first_name", "full_name", "title", "none"] = "none"
+    user_title: str | None = None
 
 
 def render_config(a: WizardAnswers) -> str:
@@ -22,7 +26,7 @@ def render_config(a: WizardAnswers) -> str:
     The output must validate via voice_assistant.config.Config.
     """
     roots_block = "\n".join(f'    - "{p}"' for p in a.allowed_roots)
-    return (
+    base = (
         "brain:\n"
         f"  provider: {a.provider}\n"
         f"  model: {a.model}\n"
@@ -54,6 +58,13 @@ def render_config(a: WizardAnswers) -> str:
         "  level: INFO\n"
         "  file: ~/.voice-assistant/voice-assistant.log\n"
     )
+    user_block = ""
+    if a.user_name or a.user_address_as != "none":
+        d: dict = {"user": {"name": a.user_name, "address_as": a.user_address_as}}
+        if a.user_title:
+            d["user"]["title"] = a.user_title
+        user_block = "\n" + yaml.safe_dump(d, sort_keys=False, default_flow_style=False)
+    return base + user_block
 
 
 PROVIDER_ENV_VAR: dict[Provider, str] = {
@@ -296,6 +307,27 @@ def run_wizard(
             "\n5) Folders the assistant may touch (comma-separated)", "~"
         )
         allowed_roots = [Path(p.strip()) for p in roots_raw.split(",") if p.strip()]
+
+        print("\n6) What should the assistant call you?")
+        print("     [1] By my first name")
+        print("     [2] By my full name")
+        print("     [3] As 'Sir' / 'Ma'am' / a title")
+        print("     [4] Don't address me by name")
+        choice = input("   > ").strip() or "4"
+        user_name: str | None = None
+        user_address_as: Literal["first_name", "full_name", "title", "none"] = "none"
+        user_title: str | None = None
+        if choice in ("1", "2", "3"):
+            user_name = _prompt_with_default("\n   Your name", "")
+            if not user_name:
+                user_address_as = "none"
+            elif choice == "1":
+                user_address_as = "first_name"
+            elif choice == "2":
+                user_address_as = "full_name"
+            elif choice == "3":
+                user_address_as = "title"
+                user_title = _prompt_with_default("   Title", "Sir")
     except (KeyboardInterrupt, EOFError):
         print("\nsetup cancelled, no files written")
         raise SystemExit(130)
@@ -306,6 +338,9 @@ def run_wizard(
         hotkey=hotkey,
         allowed_roots=allowed_roots,
         ollama_base_url=secret if provider == "ollama" else None,
+        user_name=user_name,
+        user_address_as=user_address_as,
+        user_title=user_title,
     )
 
     config_path.parent.mkdir(parents=True, exist_ok=True)

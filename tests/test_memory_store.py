@@ -4,9 +4,15 @@ from voice_assistant.memory.store import MemoryStore
 
 
 def _fake_embed(text: str) -> list[float]:
-    """Deterministic hash → 8-dim embedding for tests."""
-    rng = np.random.default_rng(seed=hash(text) & 0xFFFFFFFF)
-    return rng.random(8).tolist()
+    """Keyword-steered embedding: texts sharing keywords get similar vectors."""
+    keywords = ["wife", "hadia", "car", "honda", "color", "purple", "foo", "anything"]
+    vec = [1.0 if kw in text.lower() else 0.0 for kw in keywords]
+    # normalise so distance is meaningful
+    arr = np.array(vec, dtype=float)
+    norm = float(np.linalg.norm(arr))
+    if norm > 0:
+        arr = arr / norm
+    return arr.tolist()
 
 
 def test_remember_and_recall_returns_top_match(tmp_path):

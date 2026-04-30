@@ -271,6 +271,51 @@ def build_registry(
         import logging as _logging
         _logging.getLogger(__name__).warning("memory tools disabled: %s", exc)
 
+    # ---- browser tools (optional; requires [browser] extra + playwright install) --
+    try:
+        from voice_assistant.tools.browser import (
+            BROWSER_SCHEMAS,
+            browser_click,
+            browser_goto,
+            browser_keyboard,
+            browser_read,
+            browser_type,
+        )
+
+        _browser_fns: dict[str, Any] = {
+            "browser_goto":     browser_goto,
+            "browser_click":    browser_click,
+            "browser_type":     browser_type,
+            "browser_read":     browser_read,
+            "browser_keyboard": browser_keyboard,
+        }
+        for _bschema in BROWSER_SCHEMAS:
+            _bfn_info = cast(dict[str, Any], _bschema.get("function", {}))
+            _bname = _bfn_info.get("name", "")
+            if _bname not in _browser_fns:
+                continue
+            _braw_fn = _browser_fns[_bname]
+
+            def _wrap_browser_tool(fn: Any) -> Any:
+                def _wrapped(**kwargs: Any) -> ToolResult:
+                    import json as _json
+                    result = fn(**kwargs)
+                    text = _json.dumps(result, ensure_ascii=False)
+                    return ToolResult(ok=True, summary=text[:200], data=result)
+                _wrapped.__name__ = getattr(fn, "__name__", "browser_tool")
+                return _wrapped
+
+            specs.append(
+                ToolSpec(
+                    name=_bname,
+                    description=_bfn_info.get("description", ""),
+                    parameters=_bfn_info.get("parameters", {}),
+                    func=_wrap_browser_tool(_braw_fn),
+                )
+            )
+    except ImportError:
+        pass  # [browser] extra not installed — silently skip
+
     return specs
 
 

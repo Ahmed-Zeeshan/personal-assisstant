@@ -1,0 +1,1 @@
+recursive-include src/voice_assistant/desktop/web_dist *

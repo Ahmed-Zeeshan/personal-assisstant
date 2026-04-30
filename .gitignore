@@ -18,3 +18,5 @@ build/
 website/node_modules/
 website/dist/
 website/.astro/
+src/voice_assistant/desktop/web_dist/
+web/dist/

@@ -1,9 +1,10 @@
 ---
 import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import { site } from '../data/site';
 ---
-<Base title="voice-assistant — talk to your computer" description="A local-first voice assistant for your desktop.">
-  <main class="container-page py-24">
-    <h1 class="text-h1-fluid font-extrabold">voice-assistant</h1>
-    <p class="text-muted mt-4">scaffold checkpoint</p>
-  </main>
+<Base title={`${site.brand} — talk to your computer`} description={site.subhead}>
+  <a id="top"></a>
+  <Nav />
+  <main class="pt-16"><!-- sections will be added next tasks --></main>
 </Base>

@@ -46,8 +46,11 @@ def test_idempotent_no_duplicate_lines(tmp_path: Path):
     configure_logging(level="DEBUG", log_file=log_file)
     configure_logging(level="DEBUG", log_file=log_file)
     log = logging.getLogger("voice_assistant.test")
-    log.debug("once")
+    log.debug("once_unique_sentinel_xyzabc")
     for h in logging.getLogger().handlers:
         if hasattr(h, "flush"):
             h.flush()
-    assert log_file.read_text().count("once") == 1
+    # JSON format: exactly one log line per call (sentinel appears in text + message
+    # fields per JSON record — count non-empty lines to detect duplicates).
+    lines = [ln for ln in log_file.read_text().splitlines() if ln.strip()]
+    assert len(lines) == 1, f"expected 1 log line, got {len(lines)}: {lines}"

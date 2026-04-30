@@ -12,7 +12,7 @@
     "check": "astro check && lhci autorun"
   },
   "dependencies": {
-    "@astrojs/tailwind": "^5.1.0",
+    "@astrojs/tailwind": "^6.0.2",
     "@fontsource/inter": "^5.0.18",
     "@fontsource/jetbrains-mono": "^5.0.20",
     "@vercel/analytics": "^2.0.1",

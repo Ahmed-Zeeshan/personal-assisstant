@@ -21,5 +21,8 @@ const { title, description, url = Astro.url.href } = Astro.props;
   </head>
   <body class="bg-bg text-fg">
     <slot />
+    <script>
+      import '../scripts/reveal';
+    </script>
   </body>
 </html>

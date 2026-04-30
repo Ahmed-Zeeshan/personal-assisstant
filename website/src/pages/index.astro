@@ -6,6 +6,9 @@ import TrustStrip from '../components/TrustStrip.astro';
 import Features from '../components/Features.astro';
 import HowItWorks from '../components/HowItWorks.astro';
 import InstallTabs from '../components/InstallTabs.astro';
+import Safety from '../components/Safety.astro';
+import Faq from '../components/Faq.astro';
+import Footer from '../components/Footer.astro';
 import { site } from '../data/site';
 ---
 <Base title={`${site.brand} — talk to your computer`} description={site.subhead}>
@@ -17,5 +20,8 @@ import { site } from '../data/site';
     <Features />
     <HowItWorks />
     <InstallTabs />
+    <Safety />
+    <Faq />
   </main>
+  <Footer />
 </Base>

@@ -1,0 +1,12 @@
+---
+import { site } from '../data/site';
+---
+<footer class="border-t border-border">
+  <div class="container-page py-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4 text-sm text-muted">
+    <div>© {new Date().getFullYear()} {site.footer.author}. {site.footer.license}</div>
+    <div class="flex gap-6">
+      <a href={site.repoUrl} class="hover:text-fg transition-colors">GitHub</a>
+      <a href="#top" class="hover:text-fg transition-colors">Back to top</a>
+    </div>
+  </div>
+</footer>

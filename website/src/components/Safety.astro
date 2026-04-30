@@ -1,0 +1,21 @@
+---
+import { site } from '../data/site';
+---
+<section id="safety" class="border-t border-border">
+  <div class="container-page py-24 md:py-32">
+    <h2 class="text-h2-fluid font-bold reveal">Safety, by default.</h2>
+    <p class="mt-4 text-muted max-w-prose-narrow reveal">An LLM holding root on your filesystem is a bad time. The runtime puts walls in the right places.</p>
+
+    <ul class="mt-10 grid gap-4 sm:grid-cols-2">
+      {site.safety.map((s) => (
+        <li class="reveal rounded-xl border border-border bg-surface p-6">
+          <h3 class="font-semibold flex items-center gap-2">
+            <span aria-hidden="true" class="text-success">●</span>
+            {s.title}
+          </h3>
+          <p class="mt-2 text-sm text-muted leading-6">{s.body}</p>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>

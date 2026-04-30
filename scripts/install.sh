@@ -44,13 +44,24 @@ case "$PY_VER" in
 esac
 
 if [ "$OS" = "Linux" ]; then
+  # portaudio is a hard requirement: sounddevice fails to install without its headers/lib.
   if ! pkg-config --exists portaudio-2.0 2>/dev/null && ! ldconfig -p 2>/dev/null | grep -q libportaudio; then
-    if   command -v apt-get >/dev/null; then warn "Missing portaudio. Run: sudo apt-get install -y portaudio19-dev espeak-ng"
-    elif command -v dnf     >/dev/null; then warn "Missing portaudio. Run: sudo dnf install -y portaudio-devel espeak-ng"
-    elif command -v pacman  >/dev/null; then warn "Missing portaudio. Run: sudo pacman -S --needed portaudio espeak-ng"
-    else                                     warn "Install portaudio and espeak-ng from your package manager."
+    if   command -v apt-get >/dev/null; then warn "Missing portaudio. Run: sudo apt-get install -y portaudio19-dev"
+    elif command -v dnf     >/dev/null; then warn "Missing portaudio. Run: sudo dnf install -y portaudio-devel"
+    elif command -v pacman  >/dev/null; then warn "Missing portaudio. Run: sudo pacman -S --needed portaudio"
+    else                                     warn "Install portaudio from your package manager."
     fi
-    die "audio prerequisites missing"
+    die "portaudio missing — sounddevice cannot install without it"
+  fi
+  # espeak-ng is needed at TTS runtime by piper, but pip install succeeds without it.
+  # Soft-warn so the user gets a working install and can fix this before voice mode.
+  if ! command -v espeak-ng >/dev/null; then
+    if   command -v apt-get >/dev/null; then warn "espeak-ng not installed (needed for voice replies). Run: sudo apt-get install -y espeak-ng"
+    elif command -v dnf     >/dev/null; then warn "espeak-ng not installed (needed for voice replies). Run: sudo dnf install -y espeak-ng"
+    elif command -v pacman  >/dev/null; then warn "espeak-ng not installed (needed for voice replies). Run: sudo pacman -S --needed espeak-ng"
+    else                                     warn "espeak-ng not installed (needed for voice replies). Install from your package manager."
+    fi
+    warn "install will continue; install espeak-ng later before using voice mode"
   fi
 fi
 

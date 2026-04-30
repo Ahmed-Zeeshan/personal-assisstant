@@ -23,10 +23,12 @@ if ($args[0] -eq '--uninstall') {
 }
 
 $pythonCmd = Get-Command python -ErrorAction SilentlyContinue
-if (-not $pythonCmd) { Die "python not found. Install Python ≥3.10 from https://www.python.org/downloads/." }
+if (-not $pythonCmd) { Die "python not found. Install Python ≥3.11 from https://www.python.org/downloads/." }
+$gitCmd    = Get-Command git    -ErrorAction SilentlyContinue
+if (-not $gitCmd) { Die "git not found. pip needs git to install from $RepoUrl — install Git for Windows from https://git-scm.com/download/win." }
 
 $pyVer = & python -c "import sys; print('%d.%d' % sys.version_info[:2])"
-if (-not ($pyVer -in @('3.10','3.11','3.12','3.13','3.14'))) { Die "Python 3.10+ required (found $pyVer)." }
+if (-not ($pyVer -in @('3.11','3.12','3.13','3.14'))) { Die "Python 3.11+ required (found $pyVer)." }
 
 Say "installing into $VaHome"
 New-Item -ItemType Directory -Force -Path $VaHome,$ConfigDir,$LauncherDir | Out-Null

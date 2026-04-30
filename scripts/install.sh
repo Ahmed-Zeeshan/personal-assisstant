@@ -35,11 +35,12 @@ case "$OS" in
   *) die "Unsupported OS: $OS. Use install.ps1 on Windows." ;;
 esac
 
-command -v python3 >/dev/null || die "python3 not found. Install Python ≥3.10 from https://www.python.org/downloads/."
+command -v python3 >/dev/null || die "python3 not found. Install Python ≥3.11 from https://www.python.org/downloads/."
+command -v git     >/dev/null || die "git not found. pip needs git to install from $REPO_URL — install git from your package manager."
 PY_VER="$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
 case "$PY_VER" in
-  3.10|3.11|3.12|3.13|3.14) ;;
-  *) die "Python 3.10+ required (found $PY_VER)." ;;
+  3.11|3.12|3.13|3.14) ;;
+  *) die "Python 3.11+ required (found $PY_VER)." ;;
 esac
 
 if [ "$OS" = "Linux" ]; then

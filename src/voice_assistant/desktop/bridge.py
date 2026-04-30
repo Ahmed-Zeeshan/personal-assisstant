@@ -2,12 +2,17 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
+import logging
+import os
 import yaml
 from voice_assistant.config import Config
 from voice_assistant.setup_wizard import (
-    DEFAULT_MODELS, WizardAnswers, render_config, render_env, PROVIDER_ENV_VAR,
+    DEFAULT_MODELS, MODELS_BY_PROVIDER, WizardAnswers,
+    render_config, render_env, PROVIDER_ENV_VAR,
 )
 from voice_assistant.desktop.events import EventBus
+
+log = logging.getLogger(__name__)
 
 
 def _config_to_dict(path: Path) -> dict[str, Any] | None:
@@ -37,6 +42,19 @@ def _default_config_dict() -> dict[str, Any]:
     }
 
 
+def _has_secret_for(provider: str, env_path: Path) -> bool:
+    """Return True iff env_path contains a non-empty value for the provider's key."""
+    if provider not in PROVIDER_ENV_VAR or not env_path.exists():
+        return False
+    var = PROVIDER_ENV_VAR[provider]
+    prefix = f"{var}="
+    for line in env_path.read_text().splitlines():
+        line = line.strip()
+        if line.startswith(prefix) and len(line) > len(prefix):
+            return True
+    return False
+
+
 class Bridge:
     """JS-callable surface. All methods MUST be JSON-safe in/out."""
 
@@ -49,6 +67,7 @@ class Bridge:
         on_send_text: Callable[[str], None],
         on_listening_start: Callable[[], None],
         on_listening_stop: Callable[[], None],
+        on_config_reload: Callable[[], None] | None = None,
     ) -> None:
         self._config_path = config_path
         self._env_path = env_path
@@ -56,6 +75,7 @@ class Bridge:
         self._on_send_text = on_send_text
         self._on_listening_start = on_listening_start
         self._on_listening_stop = on_listening_stop
+        self._on_config_reload = on_config_reload
 
     # ---- methods JS calls --------------------------------------------------
     def start_listening(self) -> None:
@@ -68,7 +88,10 @@ class Bridge:
         self._on_send_text(text)
 
     def get_config(self) -> dict[str, Any]:
-        return _config_to_dict(self._config_path) or _default_config_dict()
+        cfg = _config_to_dict(self._config_path) or _default_config_dict()
+        cfg["has_secret"] = _has_secret_for(cfg["provider"], self._env_path)
+        cfg["available_models"] = {p: list(m) for p, m in MODELS_BY_PROVIDER.items()}
+        return cfg
 
     def save_config(self, cfg: dict[str, Any]) -> dict[str, Any]:
         try:
@@ -92,7 +115,8 @@ class Bridge:
         self._env_path.parent.mkdir(parents=True, exist_ok=True)
         self._config_path.write_text(yaml_text)
 
-        secret = cfg.get("_secret")
+        # Determine which secret to write. Empty input + existing key = preserve.
+        secret = cfg.get("_secret") or ""
         if not secret and provider == "ollama":
             secret = cfg.get("ollama_base_url") or "http://localhost:11434"
         if secret:
@@ -103,8 +127,25 @@ class Bridge:
             except OSError:
                 pass
 
-        # Emit fresh config event so the UI re-renders.
-        self._bus.publish({"type": "config", "cfg": _config_to_dict(self._config_path) or _default_config_dict()})
+        # Reload .env into the running process so new keys take effect immediately.
+        try:
+            from dotenv import load_dotenv
+            load_dotenv(self._env_path, override=True)
+        except Exception:
+            log.exception("failed to reload .env")
+
+        # Tell the orchestrator to swap brains for the new provider/model.
+        if self._on_config_reload is not None:
+            try:
+                self._on_config_reload()
+            except Exception:
+                log.exception("config reload callback failed")
+
+        # Emit fresh config event so the UI re-renders (with new has_secret).
+        new_cfg = _config_to_dict(self._config_path) or _default_config_dict()
+        new_cfg["has_secret"] = _has_secret_for(new_cfg["provider"], self._env_path)
+        new_cfg["available_models"] = {p: list(m) for p, m in MODELS_BY_PROVIDER.items()}
+        self._bus.publish({"type": "config", "cfg": new_cfg})
         return {"ok": True}
 
     def quit(self) -> None:

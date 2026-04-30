@@ -6,6 +6,8 @@ export interface AppConfig {
   hotkey: string;
   allowed_roots: string[];
   ollama_base_url: string | null;
+  has_secret?: boolean;
+  available_models?: Record<Provider, string[]>;
 }
 
 export type VAEvent =

@@ -127,11 +127,36 @@ def _run_gui_mode(orch, cfg, config_path: Path) -> None:
         except Exception as exc:
             log.warning("audio init failed (%s); voice mode disabled", exc)
 
+    # Holder for the active orchestrator. Settings save can swap this out so
+    # provider/model/key changes take effect without a restart.
+    state = {"orch": orch, "cfg": cfg}
+
+    def _reload_brain() -> None:
+        """Re-read config + .env and rebuild the orchestrator with the new brain."""
+        load_dotenv(override=True)
+        new_cfg = load_config(config_path)
+        new_policy = SafetyPolicy(
+            allowed_roots=new_cfg.safety.allowed_roots,
+            destructive_requires_confirmation=new_cfg.safety.destructive_requires_confirmation,
+            delete_rate_per_minute=new_cfg.safety.delete_rate_per_minute,
+        )
+        new_brain = Brain(provider=new_cfg.brain.provider, model=new_cfg.brain.model)
+        new_gmail = None
+        if new_cfg.gmail and new_cfg.gmail.credentials_file.exists():
+            new_gmail = new_cfg.gmail.credentials_file
+        state["orch"] = Orchestrator(
+            brain=new_brain,
+            tools=build_registry(policy=new_policy, gmail_credentials_file=new_gmail),
+        )
+        state["cfg"] = new_cfg
+        log.info("orchestrator reloaded with provider=%s model=%s",
+                 new_cfg.brain.provider, new_cfg.brain.model)
+
     def _do_request(text: str) -> None:
         bus.publish({"type": "transcript", "speaker": "user", "text": text})
         bus.publish({"type": "status", "value": "thinking"})
         try:
-            reply = orch.handle(text)
+            reply = state["orch"].handle(text)
             bus.publish({"type": "transcript", "speaker": "assistant", "text": reply})
             if speaker is not None:
                 bus.publish({"type": "status", "value": "speaking"})
@@ -181,6 +206,7 @@ def _run_gui_mode(orch, cfg, config_path: Path) -> None:
         on_send_text=_on_text,
         on_listening_start=_on_listen_start,
         on_listening_stop=lambda: None,
+        on_config_reload=_reload_brain,
     )
 
     # System-wide hotkey worker thread.

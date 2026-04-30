@@ -95,9 +95,37 @@ import sys
 
 DEFAULT_MODELS: dict[Provider, str] = {
     "anthropic": "claude-sonnet-4-6",
-    "openai":    "gpt-4o",
-    "gemini":    "gemini-1.5-pro",
-    "ollama":    "llama3.1:8b",
+    "openai":    "gpt-5.5",
+    "gemini":    "gemini-3.1-pro",
+    "ollama":    "qwen3:14b",
+}
+
+# Curated lists of currently-supported models per provider, newest/best first.
+# Deprecated models (gemini-1.5-*, gpt-3.5-*) are intentionally absent.
+MODELS_BY_PROVIDER: dict[Provider, list[str]] = {
+    "anthropic": [
+        "claude-opus-4-7",        # most capable
+        "claude-sonnet-4-6",      # balanced — default
+        "claude-haiku-4-5",       # fastest / cheapest
+    ],
+    "openai": [
+        "gpt-5.5",                # frontier (default)
+        "gpt-5.4",                # standard
+        "gpt-5.4-mini",           # fast, cheap
+        "gpt-4o",                 # legacy production
+    ],
+    "gemini": [
+        "gemini-3.1-pro",         # frontier (default)
+        "gemini-3.1-flash",       # fast
+        "gemini-2.5-flash",       # still supported
+    ],
+    "ollama": [
+        "qwen3:14b",              # balanced default
+        "llama3.3:70b",           # large general-purpose
+        "qwen3.6:27b",            # coding-focused
+        "qwen3-coder:30b",        # long-context coding
+        "gemma3:4b",              # small / fast
+    ],
 }
 
 _PROVIDER_LABELS: dict[Provider, str] = {

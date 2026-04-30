@@ -67,3 +67,71 @@ def test_render_env_for_ollama_writes_base_url():
     env = render_env("ollama", "http://localhost:11434", existing="")
     assert "OLLAMA_BASE_URL=http://localhost:11434" in env
     assert "ANTHROPIC_API_KEY" not in env
+
+
+import os
+import sys
+import pytest
+from voice_assistant.setup_wizard import run_wizard
+
+
+def _patch_io(monkeypatch, inputs: list[str], passwords: list[str]):
+    input_iter = iter(inputs)
+    pw_iter = iter(passwords)
+    monkeypatch.setattr("builtins.input", lambda *_: next(input_iter))
+    monkeypatch.setattr("getpass.getpass", lambda *_: next(pw_iter))
+
+
+def test_wizard_writes_anthropic_config_and_env(tmp_path, monkeypatch):
+    config_path = tmp_path / "config.yaml"
+    env_path = tmp_path / ".env"
+    _patch_io(monkeypatch, inputs=["1", "", "", ""], passwords=["sk-ant-test"])
+    run_wizard(config_path=config_path, env_path=env_path)
+
+    assert config_path.exists()
+    assert env_path.exists()
+    assert "ANTHROPIC_API_KEY=sk-ant-test" in env_path.read_text()
+    assert "provider: anthropic" in config_path.read_text()
+
+
+def test_wizard_writes_ollama_with_base_url_and_no_key(tmp_path, monkeypatch):
+    config_path = tmp_path / "config.yaml"
+    env_path = tmp_path / ".env"
+    _patch_io(monkeypatch, inputs=["4", "", "", "", ""], passwords=[])
+    run_wizard(config_path=config_path, env_path=env_path)
+
+    assert "OLLAMA_BASE_URL=http://localhost:11434" in env_path.read_text()
+    assert "provider: ollama" in config_path.read_text()
+
+
+def test_wizard_aborts_on_existing_config_when_user_declines(tmp_path, monkeypatch):
+    config_path = tmp_path / "config.yaml"
+    env_path = tmp_path / ".env"
+    config_path.write_text("# existing\n")
+    _patch_io(monkeypatch, inputs=["n"], passwords=[])
+    run_wizard(config_path=config_path, env_path=env_path)
+
+    assert config_path.read_text() == "# existing\n"
+    assert not env_path.exists()
+
+
+def test_wizard_force_overwrites_existing(tmp_path, monkeypatch):
+    config_path = tmp_path / "config.yaml"
+    env_path = tmp_path / ".env"
+    config_path.write_text("# existing\n")
+    _patch_io(monkeypatch, inputs=["1", "", "", ""], passwords=["sk-ant-test"])
+    run_wizard(config_path=config_path, env_path=env_path, force=True)
+
+    assert "provider: anthropic" in config_path.read_text()
+
+
+def test_wizard_writes_env_with_mode_0600(tmp_path, monkeypatch):
+    if sys.platform == "win32":
+        pytest.skip("file modes are POSIX-only")
+    config_path = tmp_path / "config.yaml"
+    env_path = tmp_path / ".env"
+    _patch_io(monkeypatch, inputs=["1", "", "", ""], passwords=["sk-ant-test"])
+    run_wizard(config_path=config_path, env_path=env_path)
+
+    mode = oct(env_path.stat().st_mode & 0o777)
+    assert mode == "0o600"

@@ -217,6 +217,60 @@ def build_registry(
     except ImportError:
         pass  # [web] extra not installed — silently skip
 
+    # ---- memory tools (optional; requires [memory] extra + API key) ----------
+    try:
+        import logging as _logging
+
+        from voice_assistant.memory.store import MemoryStore
+        from voice_assistant.memory.tool import (
+            RECALL_SCHEMA,
+            REMEMBER_SCHEMA,
+            make_recall_tool,
+            make_remember_tool,
+        )
+
+        def _embed_fn(text: str) -> list[float]:
+            import litellm as _litellm
+            resp = _litellm.embedding(model="text-embedding-3-small", input=[text])
+            return resp.data[0]["embedding"]  # type: ignore[no-any-return]
+
+        _memory_home = Path.home() / ".voice-assistant"
+        _store = MemoryStore(_memory_home / "memory.db", embed=_embed_fn, dim=1536)
+        _remember_fn = make_remember_tool(_store)
+        _recall_fn = make_recall_tool(_store)
+
+        def _wrap_dict_tool(fn: Any) -> Any:
+            """Wrap a dict-returning tool into a ToolResult-returning callable."""
+            def _wrapped(**kwargs: Any) -> ToolResult:
+                result = fn(**kwargs)
+                import json as _json
+                text = _json.dumps(result, ensure_ascii=False)
+                return ToolResult(ok=True, summary=text[:200], data=result)
+            _wrapped.__name__ = getattr(fn, "__name__", "tool")
+            return _wrapped
+
+        rem_schema = cast(dict[str, Any], REMEMBER_SCHEMA.get("function", {}))
+        rec_schema = cast(dict[str, Any], RECALL_SCHEMA.get("function", {}))
+        specs.append(
+            ToolSpec(
+                name="remember",
+                description=rem_schema["description"],
+                parameters=rem_schema["parameters"],
+                func=_wrap_dict_tool(_remember_fn),
+            )
+        )
+        specs.append(
+            ToolSpec(
+                name="recall",
+                description=rec_schema["description"],
+                parameters=rec_schema["parameters"],
+                func=_wrap_dict_tool(_recall_fn),
+            )
+        )
+    except Exception as exc:
+        import logging as _logging
+        _logging.getLogger(__name__).warning("memory tools disabled: %s", exc)
+
     return specs
 
 

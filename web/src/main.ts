@@ -57,6 +57,9 @@ bus.on((e) => {
     case 'toast':
       toast.show(e.level, e.message);
       break;
+    case 'history_replay':
+      transcript.replayHistory(e.items);
+      break;
   }
 });
 
@@ -65,11 +68,37 @@ composer.onRecord(() => { void bridge.startListening(); });
 header.onSettingsClick(() => { if (currentConfig) settings.open(currentConfig); });
 settings.onSave(async (cfg) => bridge.saveConfig(cfg as AppConfig));
 
-// Keyboard shortcuts: Esc closes settings; Cmd/Ctrl+, opens.
+function composerInput(): HTMLInputElement | null {
+  return document.querySelector<HTMLInputElement>('footer [data-input]');
+}
+
+// Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') settings.close();
+  const target = e.target as HTMLElement;
+  const inForm = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT');
+
+  // Cmd/Ctrl + , → open settings
   if ((e.metaKey || e.ctrlKey) && e.key === ',') {
     e.preventDefault();
     if (currentConfig) settings.open(currentConfig);
+    return;
+  }
+  // Esc → close settings
+  if (e.key === 'Escape') {
+    settings.close();
+    return;
+  }
+  if (inForm) return;
+  // / → focus composer
+  if (e.key === '/') {
+    e.preventDefault();
+    composerInput()?.focus();
+    return;
+  }
+  // Cmd/Ctrl + K → focus composer
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    composerInput()?.focus();
+    return;
   }
 });

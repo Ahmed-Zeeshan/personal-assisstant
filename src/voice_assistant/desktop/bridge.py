@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml
 
@@ -17,6 +17,9 @@ from voice_assistant.setup_wizard import (
     render_config,
     render_env,
 )
+
+if TYPE_CHECKING:
+    from voice_assistant.history import History
 
 log = logging.getLogger(__name__)
 
@@ -80,6 +83,7 @@ class Bridge:
         on_listening_start: Callable[[], None],
         on_listening_stop: Callable[[], None],
         on_config_reload: Callable[[], None] | None = None,
+        history: History | None = None,
     ) -> None:
         self._config_path = config_path
         self._env_path = env_path
@@ -88,6 +92,7 @@ class Bridge:
         self._on_listening_start = on_listening_start
         self._on_listening_stop = on_listening_stop
         self._on_config_reload = on_config_reload
+        self._history = history
 
     # ---- methods JS calls --------------------------------------------------
     def start_listening(self) -> None:
@@ -162,6 +167,12 @@ class Bridge:
         new_cfg["available_models"] = {p: list(m) for p, m in MODELS_BY_PROVIDER.items()}
         self._bus.publish({"type": "config", "cfg": new_cfg})
         return {"ok": True}
+
+    def get_history(self) -> list[dict[str, Any]]:
+        """Return the last 50 conversation history items for GUI replay."""
+        if self._history is None:
+            return []
+        return self._history.load_recent(50)
 
     def quit(self) -> None:
         # Window close is handled in window.py; this is a hook for the JS quit shortcut.

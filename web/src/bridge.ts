@@ -1,5 +1,5 @@
 import { bus } from './state';
-import type { AppConfig, VAEvent } from './types';
+import type { AppConfig, HistoryItem, VAEvent } from './types';
 
 declare global {
   interface Window {
@@ -10,6 +10,7 @@ declare global {
         send_text(text: string): Promise<void>;
         get_config(): Promise<AppConfig>;
         save_config(cfg: AppConfig & { _secret?: string }): Promise<{ok: boolean; errors?: string[]}>;
+        get_history(): Promise<HistoryItem[]>;
         quit(): Promise<void>;
       };
     };
@@ -36,6 +37,9 @@ export const bridge = {
   saveConfig:     async (cfg: AppConfig & { _secret?: string }) => hasPy()
     ? window.pywebview.api.save_config(cfg)
     : ({ ok: true } as const),
+  getHistory:     async (): Promise<HistoryItem[]> => hasPy()
+    ? window.pywebview.api.get_history()
+    : [],
   quit:           async () => hasPy() ? window.pywebview.api.quit() : void 0,
 };
 
@@ -44,6 +48,7 @@ if (hasPy()) {
   // pywebview readiness — pywebviewready DOM event fires when window.pywebview is injected
   document.addEventListener('pywebviewready', () => {
     void bridge.getConfig().then((cfg) => bus.emit({ type: 'config', cfg }));
+    void bridge.getHistory().then((items) => bus.emit({ type: 'history_replay', items }));
   });
 } else {
   // Browser dev: push a fake config after a tick.

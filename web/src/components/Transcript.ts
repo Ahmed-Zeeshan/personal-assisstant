@@ -1,3 +1,5 @@
+import type { HistoryItem } from '../types';
+
 export type TranscriptLine = { speaker: 'user'|'assistant'; text: string; tool_call?: string };
 
 export class Transcript {
@@ -55,5 +57,13 @@ export class Transcript {
 
   endAssistant(): void {
     this.streamingLine = null;
+  }
+
+  replayHistory(items: HistoryItem[]): void {
+    if (items.length === 0) return;
+    if (this.el.querySelector('p.text-dim')) this.el.replaceChildren();
+    for (const item of items) {
+      this.push({ speaker: item.speaker, text: item.text });
+    }
   }
 }

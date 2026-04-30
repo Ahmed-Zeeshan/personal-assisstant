@@ -13,6 +13,8 @@ export interface AppConfig {
   user_title: string | null;
 }
 
+export type HistoryItem = { speaker: 'user' | 'assistant'; text: string; ts?: string };
+
 export type VAEvent =
   | { type: 'status';            value: 'idle'|'listening'|'thinking'|'speaking'|'error' }
   | { type: 'transcript';        speaker: 'user'|'assistant'; text: string; tool_call?: string }
@@ -22,4 +24,5 @@ export type VAEvent =
   | { type: 'tool_invoked';      name: string }
   | { type: 'audio_level';       rms: number }
   | { type: 'config';            cfg: AppConfig }
-  | { type: 'toast';             level: 'info'|'warn'|'error'; message: string };
+  | { type: 'toast';             level: 'info'|'warn'|'error'; message: string }
+  | { type: 'history_replay';    items: HistoryItem[] };

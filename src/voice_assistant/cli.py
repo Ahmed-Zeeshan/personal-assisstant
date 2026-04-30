@@ -112,11 +112,13 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
     from voice_assistant.desktop.bridge import Bridge
     from voice_assistant.desktop.events import EventBus
     from voice_assistant.desktop.window import DesktopApp
+    from voice_assistant.history import History
     from voice_assistant.stt import Transcriber
     from voice_assistant.tts import Speaker
 
     bus = EventBus()
     home = Path.home() / ".voice-assistant"
+    history = History(home / "history.jsonl")
 
     transcriber = None
     speaker = None
@@ -154,6 +156,7 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
                  new_cfg.brain.provider, new_cfg.brain.model)
 
     def _do_request(text: str) -> None:
+        history.append("user", text)
         bus.publish({"type": "transcript", "speaker": "user", "text": text})
         bus.publish({"type": "status", "value": "thinking"})
         buf = ""
@@ -168,6 +171,8 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
                 elif ev["type"] == "tool_result":
                     pass  # not surfaced to UI by default
                 elif ev["type"] == "done":
+                    if buf:
+                        history.append("assistant", buf)
                     bus.publish({"type": "transcript_end"})
         except Exception as exc:
             log.exception("orch.handle_stream failed")
@@ -218,6 +223,7 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
         on_listening_start=_on_listen_start,
         on_listening_stop=lambda: None,
         on_config_reload=_reload_brain,
+        history=history,
     )
 
     # System-wide hotkey worker thread.

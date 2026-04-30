@@ -8,6 +8,9 @@ export interface AppConfig {
   ollama_base_url: string | null;
   has_secret?: boolean;
   available_models?: Record<Provider, string[]>;
+  user_name: string | null;
+  user_address_as: 'first_name' | 'full_name' | 'title' | 'none';
+  user_title: string | null;
 }
 
 export type VAEvent =

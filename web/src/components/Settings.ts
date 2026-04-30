@@ -50,6 +50,26 @@ export class Settings {
           <label class="block text-muted mb-1">Allowed folders (comma-separated)</label>
           <input data-field="roots" class="w-full h-10 px-3 rounded-md border border-border bg-bg text-fg" placeholder="~" />
         </div>
+        <div class="border-t border-border pt-5 space-y-3">
+          <h3 class="font-medium text-fg">Identity</h3>
+          <div>
+            <label class="block text-muted mb-1">Your name</label>
+            <input data-field="user_name" class="w-full h-10 px-3 rounded-md border border-border bg-bg text-fg" placeholder="(leave blank to skip)" />
+          </div>
+          <div>
+            <label class="block text-muted mb-1">How should the assistant address you?</label>
+            <select data-field="user_address_as" class="w-full h-10 px-3 rounded-md border border-border bg-bg text-fg">
+              <option value="none">Don't address me by name</option>
+              <option value="first_name">By my first name</option>
+              <option value="full_name">By my full name</option>
+              <option value="title">By a title (Sir / Ma'am / etc)</option>
+            </select>
+          </div>
+          <div data-title-row class="hidden">
+            <label class="block text-muted mb-1">Title</label>
+            <input data-field="user_title" class="w-full h-10 px-3 rounded-md border border-border bg-bg text-fg" placeholder="Sir" />
+          </div>
+        </div>
         <div data-error class="hidden text-warn text-xs"></div>
       </form>
       <footer class="p-5 border-t border-border flex justify-end gap-2">
@@ -64,6 +84,9 @@ export class Settings {
     this.el.querySelector<HTMLSelectElement>('[data-field="provider"]')!.addEventListener('change', () => {
       this.refreshSecretFields();
       this.refreshModelOptions();
+    });
+    this.el.querySelector<HTMLSelectElement>('[data-field="user_address_as"]')!.addEventListener('change', () => {
+      this.refreshTitleRow();
     });
     this.el.querySelector<HTMLButtonElement>('[data-toggle-secret]')!.addEventListener('click', () => {
       const input = this.el.querySelector<HTMLInputElement>('[data-field="secret"]')!;
@@ -106,8 +129,18 @@ export class Settings {
     (this.el.querySelector('[data-field="provider"]') as HTMLSelectElement).value = cfg.provider;
     (this.el.querySelector('[data-field="hotkey"]') as HTMLInputElement).value = cfg.hotkey;
     (this.el.querySelector('[data-field="roots"]') as HTMLInputElement).value = cfg.allowed_roots.join(', ');
+    (this.el.querySelector('[data-field="user_name"]') as HTMLInputElement).value = cfg.user_name || '';
+    (this.el.querySelector('[data-field="user_address_as"]') as HTMLSelectElement).value = cfg.user_address_as || 'none';
+    (this.el.querySelector('[data-field="user_title"]') as HTMLInputElement).value = cfg.user_title || '';
     this.refreshModelOptions();
     this.refreshSecretFields();
+    this.refreshTitleRow();
+  }
+
+  private refreshTitleRow(): void {
+    const addressAs = (this.el.querySelector('[data-field="user_address_as"]') as HTMLSelectElement).value;
+    const titleRow = this.el.querySelector<HTMLElement>('[data-title-row]')!;
+    titleRow.classList.toggle('hidden', addressAs !== 'title');
   }
 
   private refreshModelOptions(): void {
@@ -171,16 +204,20 @@ export class Settings {
   }
 
   private read(): AppConfig {
-    const provider = (this.el.querySelector('[data-field="provider"]') as HTMLSelectElement).value as Provider;
-    const model    = (this.el.querySelector('[data-field="model"]') as HTMLSelectElement).value.trim();
-    const hotkey   = (this.el.querySelector('[data-field="hotkey"]') as HTMLInputElement).value.trim();
-    const roots    = (this.el.querySelector('[data-field="roots"]') as HTMLInputElement).value
+    const provider      = (this.el.querySelector('[data-field="provider"]') as HTMLSelectElement).value as Provider;
+    const model         = (this.el.querySelector('[data-field="model"]') as HTMLSelectElement).value.trim();
+    const hotkey        = (this.el.querySelector('[data-field="hotkey"]') as HTMLInputElement).value.trim();
+    const roots         = (this.el.querySelector('[data-field="roots"]') as HTMLInputElement).value
       .split(',').map(s => s.trim()).filter(Boolean);
-    const secret   = (this.el.querySelector('[data-field="secret"]') as HTMLInputElement).value.trim();
+    const secret        = (this.el.querySelector('[data-field="secret"]') as HTMLInputElement).value.trim();
+    const user_name     = (this.el.querySelector('[data-field="user_name"]') as HTMLInputElement).value.trim() || null;
+    const user_address_as = (this.el.querySelector('[data-field="user_address_as"]') as HTMLSelectElement).value as AppConfig['user_address_as'];
+    const user_title    = (this.el.querySelector('[data-field="user_title"]') as HTMLInputElement).value.trim() || null;
     const cfg: AppConfig & { _secret?: string } = {
       provider, model, hotkey,
       allowed_roots: roots,
       ollama_base_url: provider === 'ollama' ? (secret || this.currentCfg?.ollama_base_url || 'http://localhost:11434') : null,
+      user_name, user_address_as, user_title,
     };
     if (provider !== 'ollama' && secret) cfg._secret = secret;
     return cfg;

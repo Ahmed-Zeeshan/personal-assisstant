@@ -29,6 +29,9 @@ def _config_to_dict(path: Path) -> dict[str, Any] | None:
         "hotkey":   cfg.audio.hotkey,
         "allowed_roots": [str(p) for p in cfg.safety.allowed_roots],
         "ollama_base_url": None,
+        "user_name":       cfg.user.name,
+        "user_address_as": cfg.user.address_as,
+        "user_title":      cfg.user.title,
     }
 
 
@@ -39,6 +42,9 @@ def _default_config_dict() -> dict[str, Any]:
         "hotkey":   "ctrl+shift+space",
         "allowed_roots": ["~"],
         "ollama_base_url": None,
+        "user_name":       None,
+        "user_address_as": "none",
+        "user_title":      None,
     }
 
 
@@ -105,6 +111,9 @@ class Bridge:
                 hotkey=cfg["hotkey"],
                 allowed_roots=roots,
                 ollama_base_url=cfg.get("ollama_base_url"),
+                user_name=cfg.get("user_name") or None,
+                user_address_as=cfg.get("user_address_as") or "none",
+                user_title=cfg.get("user_title") or None,
             )
             yaml_text = render_config(answers)
             Config.model_validate(yaml.safe_load(yaml_text))  # validation

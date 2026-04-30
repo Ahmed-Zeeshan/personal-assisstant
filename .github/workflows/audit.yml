@@ -1,0 +1,31 @@
+name: Security audit
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"   # Monday 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  pip-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: pip install -e . pip-audit
+      - name: Audit
+        run: pip-audit --strict --skip-editable
+
+  npm-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: web/
+        run: cd web && npm audit --omit=dev --audit-level=high
+      - name: website/
+        run: cd website && npm audit --omit=dev --audit-level=high

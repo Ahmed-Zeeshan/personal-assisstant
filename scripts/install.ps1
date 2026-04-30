@@ -41,8 +41,19 @@ $exe = Join-Path $VaHome '.venv\Scripts\voice-assistant.exe'
 
 Say "installing voice-assistant from $RepoUrl"
 & $pip install --upgrade pip | Out-Null
-$Extras = if ($env:VA_NO_DESKTOP -eq '1') { 'audio,gmail,web' } else { 'audio,gmail,web,desktop' }
+$Extras = if ($env:VA_NO_DESKTOP -eq '1') { 'audio,gmail,web,memory,browser' } else { 'audio,gmail,web,memory,browser,desktop' }
 & $pip install "voice-assistant[$Extras] @ git+$RepoUrl"
+
+# Browser automation binaries (Chromium + deps).
+$pyHasPW = & $pip show playwright 2>&1 | Select-String "^Name: playwright"
+if ($pyHasPW) {
+  Say "installing Chromium for browser automation"
+  $pwExe = Join-Path $VaHome '.venv\Scripts\playwright.exe'
+  & $pwExe install chromium
+  if ($LASTEXITCODE -ne 0) {
+    Warn "playwright chromium install failed; browser/whatsapp tools won't work until you run: $VaHome\.venv\Scripts\playwright.exe install chromium"
+  }
+}
 
 Say "creating launcher shortcut at $LauncherDir\voice-assistant.cmd"
 @"

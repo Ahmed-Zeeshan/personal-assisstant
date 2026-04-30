@@ -84,9 +84,17 @@ python3 -m venv "$VA_HOME/.venv"
 
 say "installing voice-assistant from $REPO_URL"
 "$VA_HOME/.venv/bin/pip" install --upgrade pip >/dev/null
-EXTRAS="audio,gmail,web"
+EXTRAS="audio,gmail,web,memory,browser"
 if [ -z "${VA_NO_DESKTOP:-}" ]; then EXTRAS="$EXTRAS,desktop"; fi
 "$VA_HOME/.venv/bin/pip" install "voice-assistant[$EXTRAS] @ git+$REPO_URL"
+
+# Browser automation binaries (Chromium + deps).
+if "$VA_HOME/.venv/bin/python" -c "import playwright" 2>/dev/null; then
+  say "installing Chromium for browser automation (~150 MB)"
+  if ! "$VA_HOME/.venv/bin/playwright" install chromium 2>&1 | tail -3; then
+    warn "playwright chromium install failed — browser/whatsapp tools won't work until: $VA_HOME/.venv/bin/playwright install chromium"
+  fi
+fi
 
 say "linking launcher → $LAUNCHER_DIR/voice-assistant"
 ln -sf "$VA_HOME/.venv/bin/voice-assistant" "$LAUNCHER_DIR/voice-assistant"

@@ -1,0 +1,58 @@
+---
+import { site } from '../data/site';
+const oses = [
+  { id: 'macos',   label: 'macOS',   data: site.install.macos },
+  { id: 'windows', label: 'Windows', data: site.install.windows },
+  { id: 'linux',   label: 'Linux',   data: site.install.linux },
+];
+---
+<section id="install" class="container-page py-24 md:py-32">
+  <h2 class="text-h2-fluid font-bold reveal">Install</h2>
+  <p class="mt-4 text-muted max-w-prose-narrow reveal">One command. Drops a venv into your home directory, no admin rights, no global Python pollution.</p>
+
+  <div class="mt-10 reveal" data-install-tabs>
+    <div role="tablist" aria-label="Operating system" class="flex flex-wrap gap-2 sm:gap-4 border-b border-border">
+      {oses.map((os) => (
+        <button role="tab" aria-selected={os.id === 'macos'} data-tab={os.id}
+                class="h-11 px-4 sm:px-5 rounded-t-md text-sm font-medium text-muted aria-selected:text-fg aria-selected:border-b-2 aria-selected:border-accent transition-colors">
+          {os.label}
+        </button>
+      ))}
+    </div>
+
+    {oses.map((os) => (
+      <div role="tabpanel" data-panel={os.id} class:list={['py-6 grid gap-5', os.id === 'macos' ? '' : 'hidden']}>
+        <p class="text-sm text-muted">{os.data.prereq}</p>
+
+        <div class="rounded-lg border border-border bg-surface flex items-stretch overflow-hidden">
+          <pre class="font-mono text-sm md:text-base px-4 py-3 overflow-x-auto flex-1"><code>{os.data.cmd}</code></pre>
+          <button data-copy={os.data.cmd}
+                  class="px-4 border-l border-border text-sm text-muted hover:text-fg hover:bg-bg/40 transition-colors"
+                  aria-label={`Copy install command for ${os.label}`}>Copy</button>
+        </div>
+
+        <div class="text-sm text-muted">
+          Then run <code class="font-mono text-fg bg-surface px-1.5 py-0.5 rounded">{os.data.run}</code>. {os.data.note}
+        </div>
+      </div>
+    ))}
+
+    <details class="mt-10 group">
+      <summary class="cursor-pointer text-sm text-muted hover:text-fg list-none">Or install from source ▾</summary>
+      <div class="mt-4 rounded-lg border border-border bg-surface p-4 font-mono text-sm overflow-x-auto">
+<pre><code>git clone {site.repoUrl}
+cd voice-assistant
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -e ".[audio,gmail,dev]"
+cp config.yaml.example config.yaml
+cp .env.example .env
+voice-assistant</code></pre>
+      </div>
+    </details>
+  </div>
+</section>
+
+<script>
+  import '../scripts/install-tabs';
+</script>

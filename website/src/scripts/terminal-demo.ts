@@ -1,3 +1,4 @@
+export {};
 const root = document.querySelector<HTMLElement>('#terminal-body');
 if (root && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
   const lines = Array.from(root.querySelectorAll<HTMLElement>('.t-line'));

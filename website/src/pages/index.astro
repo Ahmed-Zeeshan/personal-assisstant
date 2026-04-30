@@ -5,6 +5,7 @@ import Hero from '../components/Hero.astro';
 import TrustStrip from '../components/TrustStrip.astro';
 import Features from '../components/Features.astro';
 import HowItWorks from '../components/HowItWorks.astro';
+import InstallTabs from '../components/InstallTabs.astro';
 import { site } from '../data/site';
 ---
 <Base title={`${site.brand} — talk to your computer`} description={site.subhead}>
@@ -15,5 +16,6 @@ import { site } from '../data/site';
     <TrustStrip />
     <Features />
     <HowItWorks />
+    <InstallTabs />
   </main>
 </Base>

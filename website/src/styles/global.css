@@ -11,6 +11,7 @@
 @tailwind utilities;
 
 @layer base {
+  :root { --color-accent: #9580ff; }
   html { @apply bg-bg text-fg; -webkit-font-smoothing: antialiased; }
   body { @apply font-sans; }
   ::selection { background: theme('colors.accent'); color: theme('colors.bg'); }

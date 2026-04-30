@@ -1,4 +1,4 @@
-const root = document.querySelector<HTMLElement>('[data-loop]');
+const root = document.querySelector<HTMLElement>('#terminal-body');
 if (root && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
   const lines = Array.from(root.querySelectorAll<HTMLElement>('.t-line'));
   const typed1 = root.querySelector<HTMLElement>('[data-typed]');
@@ -10,10 +10,19 @@ if (root && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+  let visible = false;
+  const waitForVisible = async () => {
+    while (!visible) await sleep(200);
+  };
+
   async function type(el: HTMLElement | null, text: string, perChar = 35) {
     if (!el) return;
     el.textContent = '';
-    for (const ch of text) { el.textContent += ch; await sleep(perChar); }
+    for (const ch of text) {
+      await waitForVisible();
+      el.textContent += ch;
+      await sleep(perChar);
+    }
   }
 
   function show(idx: number) { lines[idx]?.classList.add('is-on'); }
@@ -21,6 +30,7 @@ if (root && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 
   async function loop() {
     while (true) {
+      await waitForVisible();
       hideAll();
       show(0);
       await type(typed1, 'voice-assistant');
@@ -36,9 +46,10 @@ if (root && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     }
   }
 
-  // Pause when not visible to save battery
   const io = new IntersectionObserver((entries) => {
-    if (entries[0].isIntersecting) { io.disconnect(); loop(); }
+    visible = entries[0].isIntersecting;
   }, { rootMargin: '0px 0px -10% 0px' });
   io.observe(root);
+
+  loop();
 }

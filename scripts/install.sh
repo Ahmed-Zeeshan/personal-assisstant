@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_URL="https://github.com/REPLACE-ME/voice-assistant"
+REPO_URL="https://github.com/Ahmed-Zeeshan/personal-assisstant"
 VA_HOME="${VA_HOME:-$HOME/.local/share/voice-assistant}"
 LAUNCHER_DIR="${HOME}/.local/bin"
 CONFIG_DIR="${HOME}/.voice-assistant"

@@ -1,6 +1,6 @@
 export const site = {
   brand: 'voice-assistant',
-  repoUrl: 'https://github.com/REPLACE-ME/voice-assistant',
+  repoUrl: 'https://github.com/Ahmed-Zeeshan/personal-assisstant',
   tagline: 'Talk to your computer.',
   subhead: 'A local-first voice assistant that opens apps, manages files, and sends email — driven by the LLM of your choice.',
   eyebrow: 'PHASE 1 · OPEN SOURCE · LOCAL-FIRST',

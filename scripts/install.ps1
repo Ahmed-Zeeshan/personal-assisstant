@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 
-$RepoUrl     = 'https://github.com/REPLACE-ME/voice-assistant'
+$RepoUrl     = 'https://github.com/Ahmed-Zeeshan/personal-assisstant'
 $VaHome      = if ($env:VA_HOME) { $env:VA_HOME } else { Join-Path $env:LOCALAPPDATA 'voice-assistant' }
 $ConfigDir   = Join-Path $env:APPDATA 'voice-assistant'
 $LauncherDir = Join-Path $env:LOCALAPPDATA 'Programs\voice-assistant'

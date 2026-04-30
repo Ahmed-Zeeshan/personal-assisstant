@@ -1,3 +1,4 @@
+param([switch]$NoSetup)
 $ErrorActionPreference = 'Stop'
 
 $RepoUrl     = 'https://github.com/Ahmed-Zeeshan/personal-assisstant'
@@ -51,4 +52,12 @@ if (-not ($env:Path -split ';' | Where-Object { $_ -eq $LauncherDir })) {
   Warn "  [Environment]::SetEnvironmentVariable('Path', `$env:Path + ';$LauncherDir', 'User')"
 }
 
-Say "done. Set your API key in $ConfigDir\.env, then run: voice-assistant"
+if ($env:SKIP_SETUP -ne '1' -and -not $NoSetup) {
+  Say "running setup wizard"
+  & $exe --setup --force
+  if ($LASTEXITCODE -ne 0) {
+    Warn "setup wizard exited non-zero; re-run later with: voice-assistant --setup"
+  }
+}
+
+Say "done. Run: voice-assistant"

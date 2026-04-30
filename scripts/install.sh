@@ -24,6 +24,11 @@ uninstall() {
 
 [ "${1:-}" = "--uninstall" ] && uninstall
 
+if [ "${1:-}" = "--no-setup" ]; then
+  export SKIP_SETUP=1
+  shift
+fi
+
 OS="$(uname -s)"
 case "$OS" in
   Darwin|Linux) ;;
@@ -66,9 +71,13 @@ case ":$PATH:" in
   *) warn "$LAUNCHER_DIR is not on PATH. Add this to your shell rc: export PATH=\"\$HOME/.local/bin:\$PATH\"" ;;
 esac
 
-if [ ! -f "$CONFIG_DIR/config.yaml" ] && [ -f "$VA_HOME/.venv/share/voice-assistant/config.yaml.example" ]; then
-  cp "$VA_HOME/.venv/share/voice-assistant/config.yaml.example" "$CONFIG_DIR/config.yaml"
-  say "seeded $CONFIG_DIR/config.yaml from example"
+if [ "${SKIP_SETUP:-}" != "1" ]; then
+  say "running setup wizard"
+  if ! "$VA_HOME/.venv/bin/voice-assistant" --setup --force; then
+    warn "setup wizard exited non-zero; re-run later with: voice-assistant --setup"
+  fi
+else
+  say "skipping setup wizard (SKIP_SETUP=1)"
 fi
 
-say "done. Set your API key in $CONFIG_DIR/.env, then run: voice-assistant"
+say "done. Run: voice-assistant"

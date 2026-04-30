@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Literal
 import litellm
 from litellm import completion
 
+from voice_assistant.retry import with_llm_retry
 from voice_assistant.tools.schema import ToolSpec
 
 if TYPE_CHECKING:
@@ -97,6 +98,7 @@ class Brain:
     def _get_system_prompt(self) -> str:
         return _build_system_prompt(self.user)
 
+    @with_llm_retry()
     def respond(
         self,
         user_text: str,
@@ -150,6 +152,20 @@ class Brain:
 
         return PlainText(content=msg.content or "")
 
+    @with_llm_retry()
+    def _start_stream(
+        self,
+        full_messages: list[dict[str, Any]],
+        tool_schemas: list[Any] | None,
+    ) -> Any:
+        """Start a streaming completion. Retried on transient errors before first yield."""
+        return litellm.completion(
+            model=self._qualified_model(),
+            messages=full_messages,
+            tools=tool_schemas or None,
+            stream=True,
+        )
+
     def complete_stream(
         self,
         messages: list[dict[str, Any]],
@@ -167,12 +183,7 @@ class Brain:
         if tools:
             tool_schemas = [t.to_openai_format() if hasattr(t, "to_openai_format") else t for t in tools]
 
-        response = litellm.completion(
-            model=self._qualified_model(),
-            messages=full_messages,
-            tools=tool_schemas or None,
-            stream=True,
-        )
+        response = self._start_stream(full_messages, tool_schemas)
 
         # Per-tool-call accumulators keyed by index
         pending: dict[int, dict[str, Any]] = {}

@@ -5,7 +5,7 @@ All browser interactions are mocked — no real Chromium or network needed.
 from __future__ import annotations
 
 import time
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 

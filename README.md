@@ -97,9 +97,9 @@ The OAuth scope requested is `gmail.send` only — read access is not granted.
 pytest -q
 ```
 
-The test suite is 93 tests covering safety, tools, brain wiring, orchestrator,
-config, logging, audio capture, STT, TTS, and Gmail (mocked). Audio I/O and
-hotkey listening are not unit-tested — those require real hardware.
+The test suite is 159+ tests covering safety, tools, brain wiring, orchestrator,
+config, logging, audio capture, STT, TTS, Gmail, memory store, browser tool,
+WhatsApp tool, and history (mocked where hardware is needed).
 
 ## Architecture
 
@@ -119,11 +119,45 @@ Modules:
 - `app` — orchestrator that wires brain → tool → brain (summary) per turn
 - `cli` — argparse entry point with text and voice modes
 
+## Tools
+
+The assistant can invoke the following tools automatically during a conversation:
+
+| Tool | Extra | Description |
+|------|-------|-------------|
+| `create_folder`, `create_file`, `read_file`, `list_folder`, `move_path`, `delete_path` | core | Filesystem operations within `safety.allowed_roots` |
+| `open_url` | core | Open a URL in the system browser |
+| `open_app` | core | Launch a desktop application by command name |
+| `send_email` | gmail | Send a plain-text email via Gmail OAuth |
+| `web_search`, `web_fetch` | web | Search the web and fetch pages |
+| `remember`, `recall` | memory | Persist and retrieve facts across sessions (sqlite-vec embeddings) |
+| `browser_goto`, `browser_click`, `browser_type`, `browser_read`, `browser_keyboard` | browser | Playwright-backed Chromium automation with a persistent profile |
+| `send_whatsapp_message` | browser | Send a WhatsApp message via WhatsApp Web (rate-limited to 5/5 min) |
+
+### Memory
+
+The `[memory]` extra stores facts in `~/.voice-assistant/memory.db` using
+SQLite + sqlite-vec. Ask the assistant to "remember that my work email is X"
+and it will store a vector embedding. Later, "what's my work email" retrieves
+the closest match automatically.
+
+### Browser & WhatsApp
+
+The `[browser]` extra launches a persistent Chromium profile at
+`~/.voice-assistant/browser-profile/`. Cookies and logins persist between
+calls. WhatsApp Web requires a one-time QR-code scan from your phone; after
+that, `send_whatsapp_message` is fully automatic.
+
+## Conversation history
+
+Every turn is appended to `~/.voice-assistant/history.jsonl`. The GUI shows
+the last 50 exchanges on open. Run `voice-assistant --text` or `--gui` to
+resume a prior session seamlessly.
+
 ## What this is not
 
 - A product. There is no installer, auto-update, multi-user, or billing.
 - Available on mobile or web — desktop only.
-- Able to message via WhatsApp. WhatsApp has no safe API for personal numbers.
 
 ## License
 

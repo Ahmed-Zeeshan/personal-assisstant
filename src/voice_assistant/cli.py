@@ -52,7 +52,7 @@ def main() -> None:
         destructive_requires_confirmation=cfg.safety.destructive_requires_confirmation,
         delete_rate_per_minute=cfg.safety.delete_rate_per_minute,
     )
-    brain = Brain(provider=cfg.brain.provider, model=cfg.brain.model)
+    brain = Brain(provider=cfg.brain.provider, model=cfg.brain.model, user=cfg.user)
     gmail_creds = None
     if cfg.gmail:
         if cfg.gmail.credentials_file.exists():
@@ -140,7 +140,7 @@ def _run_gui_mode(orch, cfg, config_path: Path) -> None:
             destructive_requires_confirmation=new_cfg.safety.destructive_requires_confirmation,
             delete_rate_per_minute=new_cfg.safety.delete_rate_per_minute,
         )
-        new_brain = Brain(provider=new_cfg.brain.provider, model=new_cfg.brain.model)
+        new_brain = Brain(provider=new_cfg.brain.provider, model=new_cfg.brain.model, user=new_cfg.user)
         new_gmail = None
         if new_cfg.gmail and new_cfg.gmail.credentials_file.exists():
             new_gmail = new_cfg.gmail.credentials_file

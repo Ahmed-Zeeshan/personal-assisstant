@@ -1,7 +1,8 @@
 from unittest.mock import MagicMock
 from voice_assistant.brain import (
-    Brain, Message, ToolCall, PlainText,
+    Brain, Message, ToolCall, PlainText, _build_system_prompt,
 )
+from voice_assistant.config import UserConfig
 from voice_assistant.tools.schema import ToolSpec, ToolResult
 
 
@@ -143,3 +144,21 @@ def test_brain_serialises_assistant_tool_calls_in_history(monkeypatch):
         m for m in captured["messages"] if m["role"] == "tool"
     )
     assert tool_msg["tool_call_id"] == "call_1"
+
+
+def test_system_prompt_first_name():
+    p = _build_system_prompt(UserConfig(name="Zeeshan Ahmed", address_as="first_name"))
+    assert "Zeeshan" in p
+    assert "Ahmed" not in p  # first name only
+
+
+def test_system_prompt_title():
+    p = _build_system_prompt(UserConfig(name="Zeeshan", address_as="title", title="Boss"))
+    assert "Boss" in p
+
+
+def test_system_prompt_none():
+    p = _build_system_prompt(UserConfig(name=None, address_as="none"))
+    # No address line at all — the second line should be the rule about response length
+    lines = p.splitlines()
+    assert "Address" not in lines[1]

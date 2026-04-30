@@ -1,0 +1,107 @@
+from __future__ import annotations
+from pathlib import Path
+import os
+import pytest
+from voice_assistant.desktop.bridge import Bridge
+from voice_assistant.desktop.events import EventBus
+
+
+@pytest.fixture
+def tmp_paths(tmp_path):
+    return tmp_path / "config.yaml", tmp_path / ".env"
+
+
+@pytest.fixture
+def bridge_with_config(tmp_paths):
+    cfg_path, env_path = tmp_paths
+    bus = EventBus()
+    sent: list[str] = []
+    bridge = Bridge(
+        config_path=cfg_path,
+        env_path=env_path,
+        bus=bus,
+        on_send_text=lambda t: sent.append(t),
+        on_listening_start=lambda: None,
+        on_listening_stop=lambda: None,
+    )
+    return bridge, bus, sent, cfg_path, env_path
+
+
+def test_bridge_send_text_invokes_callback(bridge_with_config):
+    bridge, _, sent, _, _ = bridge_with_config
+    bridge.send_text("hello")
+    assert sent == ["hello"]
+
+
+def test_bridge_get_config_returns_default_shape_when_missing(bridge_with_config):
+    bridge, _, _, _, _ = bridge_with_config
+    cfg = bridge.get_config()
+    assert cfg["provider"] in ("anthropic", "openai", "gemini", "ollama")
+    assert isinstance(cfg["model"], str) and cfg["model"]
+    assert isinstance(cfg["hotkey"], str)
+    assert isinstance(cfg["allowed_roots"], list)
+
+
+def test_bridge_save_config_writes_files_and_strips_stale_keys(bridge_with_config):
+    bridge, _, _, cfg_path, env_path = bridge_with_config
+    env_path.write_text("ANTHROPIC_API_KEY=old\nFOO=bar\n")
+    result = bridge.save_config({
+        "provider": "openai",
+        "model": "gpt-4o",
+        "hotkey": "ctrl+shift+space",
+        "allowed_roots": ["~"],
+        "ollama_base_url": None,
+        "_secret": "sk-new",
+    })
+    assert result == {"ok": True}
+    assert cfg_path.exists()
+    env_text = env_path.read_text()
+    assert "OPENAI_API_KEY=sk-new" in env_text
+    assert "ANTHROPIC_API_KEY" not in env_text
+    assert "FOO=bar" in env_text
+
+
+def test_bridge_save_config_validation_failure_returns_errors(bridge_with_config):
+    bridge, _, _, cfg_path, _ = bridge_with_config
+    result = bridge.save_config({
+        "provider": "nonexistent",
+        "model": "x",
+        "hotkey": "x",
+        "allowed_roots": ["~"],
+        "ollama_base_url": None,
+        "_secret": "k",
+    })
+    assert result["ok"] is False
+    assert isinstance(result["errors"], list) and result["errors"]
+    assert not cfg_path.exists()
+
+
+def test_bridge_save_config_emits_config_event(bridge_with_config):
+    bridge, bus, _, _, _ = bridge_with_config
+    seen: list[dict] = []
+    bus.subscribe(lambda e: seen.append(e) if e.get("type") == "config" else None)
+    bridge.save_config({
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-6",
+        "hotkey": "ctrl+shift+space",
+        "allowed_roots": ["~"],
+        "ollama_base_url": None,
+        "_secret": "sk-ant-test",
+    })
+    assert len(seen) == 1
+    assert seen[0]["cfg"]["provider"] == "anthropic"
+
+
+def test_bridge_env_file_is_mode_0600(bridge_with_config):
+    if os.name == "nt":
+        pytest.skip("file modes are POSIX-only")
+    bridge, _, _, _, env_path = bridge_with_config
+    bridge.save_config({
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-6",
+        "hotkey": "ctrl+shift+space",
+        "allowed_roots": ["~"],
+        "ollama_base_url": None,
+        "_secret": "sk-ant-test",
+    })
+    assert oct(env_path.stat().st_mode & 0o777) == "0o600"

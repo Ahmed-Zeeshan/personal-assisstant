@@ -22,6 +22,7 @@ gmail = [
     "google-api-python-client>=2.100",
     "google-auth-oauthlib>=1.1",
 ]
+desktop = ["pywebview>=5"]
 dev = [
     "pytest>=8.0",
     "pytest-mock>=3.12",
@@ -36,6 +37,9 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+voice_assistant = ["desktop/web_dist/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

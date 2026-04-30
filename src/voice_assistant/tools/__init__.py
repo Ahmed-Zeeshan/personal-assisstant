@@ -316,6 +316,34 @@ def build_registry(
     except ImportError:
         pass  # [browser] extra not installed — silently skip
 
+    # ---- whatsapp tool (optional; requires [browser] extra + playwright install) --
+    try:
+        from voice_assistant.tools.whatsapp import WHATSAPP_SCHEMA
+        from voice_assistant.tools.whatsapp import send_whatsapp_message as _wa_fn
+
+        def _wrap_wa_tool(fn: Any) -> Any:
+            def _wrapped(**kwargs: Any) -> ToolResult:
+                import json as _json
+
+                result = fn(**kwargs)
+                text = _json.dumps(result, ensure_ascii=False)
+                return ToolResult(ok=True, summary=text[:200], data=result)
+
+            _wrapped.__name__ = getattr(fn, "__name__", "whatsapp_tool")
+            return _wrapped
+
+        _wa_info = cast(dict[str, Any], WHATSAPP_SCHEMA.get("function", {}))
+        specs.append(
+            ToolSpec(
+                name="send_whatsapp_message",
+                description=_wa_info.get("description", ""),
+                parameters=_wa_info.get("parameters", {}),
+                func=_wrap_wa_tool(_wa_fn),
+            )
+        )
+    except ImportError:
+        pass  # [browser] extra not installed — silently skip
+
     return specs
 
 

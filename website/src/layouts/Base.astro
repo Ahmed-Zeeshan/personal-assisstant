@@ -1,7 +1,7 @@
 ---
 import '../styles/global.css';
-interface Props { title: string; description: string; }
-const { title, description } = Astro.props;
+interface Props { title: string; description: string; url?: string; }
+const { title, description, url = Astro.url.href } = Astro.props;
 ---
 <!doctype html>
 <html lang="en">
@@ -14,6 +14,7 @@ const { title, description } = Astro.props;
     <meta property="og:description" content={description} />
     <meta property="og:image" content="/og-image.png" />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content={url} />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>{title}</title>

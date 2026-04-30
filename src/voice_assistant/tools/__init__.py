@@ -185,4 +185,40 @@ def build_registry(
             )
         )
 
+    try:
+        from voice_assistant.tools.web import (
+            web_search, web_fetch, WEB_SEARCH_SCHEMA, WEB_FETCH_SCHEMA,
+        )
+        if web_search is not None and WEB_SEARCH_SCHEMA is not None:
+            specs.append(
+                ToolSpec(
+                    name="web_search",
+                    description=WEB_SEARCH_SCHEMA["function"]["description"],
+                    parameters=WEB_SEARCH_SCHEMA["function"]["parameters"],
+                    func=lambda **kw: _wrap_web_result(web_search(**kw)),
+                )
+            )
+        if web_fetch is not None and WEB_FETCH_SCHEMA is not None:
+            specs.append(
+                ToolSpec(
+                    name="web_fetch",
+                    description=WEB_FETCH_SCHEMA["function"]["description"],
+                    parameters=WEB_FETCH_SCHEMA["function"]["parameters"],
+                    func=lambda **kw: _wrap_web_result(web_fetch(**kw)),
+                )
+            )
+    except ImportError:
+        pass  # [web] extra not installed — silently skip
+
     return specs
+
+
+def _wrap_web_result(result: object) -> "ToolResult":  # type: ignore[name-defined]  # noqa: F821
+    """Wrap a web tool result (list or dict) into a ToolResult."""
+    import json
+    from voice_assistant.tools.schema import ToolResult
+    if isinstance(result, (list, dict)):
+        text = json.dumps(result, ensure_ascii=False)
+    else:
+        text = str(result)
+    return ToolResult(ok=True, summary=text[:200])

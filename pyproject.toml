@@ -23,6 +23,11 @@ gmail = [
     "google-auth-oauthlib>=1.1",
 ]
 desktop = ["pywebview>=5"]
+web = [
+    "duckduckgo-search>=6.0",
+    "trafilatura>=1.12",
+    "httpx>=0.27",
+]
 dev = [
     "pytest>=8.0",
     "pytest-mock>=3.12",

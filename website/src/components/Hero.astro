@@ -1,5 +1,6 @@
 ---
 import { site } from '../data/site';
+import TerminalDemo from './TerminalDemo.astro';
 ---
 <section class="relative overflow-hidden">
   <div aria-hidden="true" class="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[600px] w-[900px] rounded-full"
@@ -19,17 +20,7 @@ import { site } from '../data/site';
     </div>
 
     <div class="lg:col-span-6 reveal">
-      <div id="terminal-slot" class="rounded-xl border border-border bg-surface shadow-2xl shadow-black/40 overflow-hidden">
-        <div class="px-4 py-2 border-b border-border flex items-center gap-2 text-xs text-dim">
-          <span class="h-3 w-3 rounded-full bg-[#ff5f56]"></span>
-          <span class="h-3 w-3 rounded-full bg-[#ffbd2e]"></span>
-          <span class="h-3 w-3 rounded-full bg-[#27c93f]"></span>
-          <span class="ml-2 font-mono">voice-assistant — ~</span>
-        </div>
-        <div class="p-5 font-mono text-sm md:text-base min-h-[260px]">
-          <p class="text-muted">terminal goes here</p>
-        </div>
-      </div>
+      <TerminalDemo />
     </div>
   </div>
 </section>

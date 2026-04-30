@@ -2,6 +2,7 @@ export type TranscriptLine = { speaker: 'user'|'assistant'; text: string; tool_c
 
 export class Transcript {
   private el: HTMLElement;
+  private streamingLine: HTMLElement | null = null;
 
   constructor(parent: HTMLElement) {
     this.el = document.createElement('section');
@@ -30,5 +31,29 @@ export class Transcript {
     }
     this.el.appendChild(wrapper);
     this.el.scrollTop = this.el.scrollHeight;
+  }
+
+  startAssistant(): void {
+    if (this.el.querySelector('p.text-dim')) this.el.replaceChildren();
+    const wrapper = document.createElement('div');
+    wrapper.className = 'flex gap-3';
+    wrapper.innerHTML = '<span class="text-xs text-accent shrink-0 mt-0.5 w-16">assistant</span>';
+    const body = document.createElement('p');
+    body.className = 'text-sm leading-6 text-fg';
+    body.textContent = '';
+    wrapper.appendChild(body);
+    this.el.appendChild(wrapper);
+    this.streamingLine = body;
+    this.el.scrollTop = this.el.scrollHeight;
+  }
+
+  appendAssistant(text: string): void {
+    if (!this.streamingLine) this.startAssistant();
+    this.streamingLine!.textContent = (this.streamingLine!.textContent || '') + text;
+    this.el.scrollTop = this.el.scrollHeight;
+  }
+
+  endAssistant(): void {
+    this.streamingLine = null;
   }
 }

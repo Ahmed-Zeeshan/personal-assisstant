@@ -180,10 +180,12 @@ class Brain:
                     slot["id"] = tc.id
                 fn = getattr(tc, "function", None)
                 if fn:
-                    if getattr(fn, "name", None):
-                        slot["name"] = fn.name
-                    if getattr(fn, "arguments", None):
-                        slot["args"] += fn.arguments
+                    fn_name = getattr(fn, "name", None)
+                    if fn_name and isinstance(fn_name, str):
+                        slot["name"] = fn_name
+                    fn_args = getattr(fn, "arguments", None)
+                    if fn_args and isinstance(fn_args, str):
+                        slot["args"] += fn_args
 
         for slot in pending.values():
             if slot["name"]:

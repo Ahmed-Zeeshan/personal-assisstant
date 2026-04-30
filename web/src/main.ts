@@ -36,6 +36,18 @@ bus.on((e) => {
     case 'transcript':
       transcript.push({ speaker: e.speaker, text: e.text, tool_call: e.tool_call });
       break;
+    case 'transcript_start':
+      if (e.speaker === 'assistant') transcript.startAssistant();
+      break;
+    case 'transcript_chunk':
+      transcript.appendAssistant(e.text);
+      // First chunk: flip orb to speaking-ish state
+      if (header) header.setStatus('speaking');
+      orb.setState('speaking');
+      break;
+    case 'transcript_end':
+      transcript.endAssistant();
+      break;
     case 'audio_level':
       orb.setRms(e.rms);
       break;

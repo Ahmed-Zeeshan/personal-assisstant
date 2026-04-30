@@ -11,8 +11,12 @@ export interface AppConfig {
 }
 
 export type VAEvent =
-  | { type: 'status';      value: 'idle'|'listening'|'thinking'|'speaking'|'error' }
-  | { type: 'transcript';  speaker: 'user'|'assistant'; text: string; tool_call?: string }
-  | { type: 'audio_level'; rms: number }
-  | { type: 'config';      cfg: AppConfig }
-  | { type: 'toast';       level: 'info'|'warn'|'error'; message: string };
+  | { type: 'status';            value: 'idle'|'listening'|'thinking'|'speaking'|'error' }
+  | { type: 'transcript';        speaker: 'user'|'assistant'; text: string; tool_call?: string }
+  | { type: 'transcript_start';  speaker: 'user'|'assistant' }
+  | { type: 'transcript_chunk';  text: string }
+  | { type: 'transcript_end' }
+  | { type: 'tool_invoked';      name: string }
+  | { type: 'audio_level';       rms: number }
+  | { type: 'config';            cfg: AppConfig }
+  | { type: 'toast';             level: 'info'|'warn'|'error'; message: string };

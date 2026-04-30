@@ -155,21 +155,31 @@ def _run_gui_mode(orch, cfg, config_path: Path) -> None:
     def _do_request(text: str) -> None:
         bus.publish({"type": "transcript", "speaker": "user", "text": text})
         bus.publish({"type": "status", "value": "thinking"})
+        buf = ""
         try:
-            reply = state["orch"].handle(text)
-            bus.publish({"type": "transcript", "speaker": "assistant", "text": reply})
-            if speaker is not None:
-                bus.publish({"type": "status", "value": "speaking"})
-                try:
-                    speaker.speak(reply)
-                except Exception as exc:
-                    log.exception("speaker.speak failed")
-                    bus.publish({"type": "toast", "level": "warn", "message": f"TTS failed: {exc}"})
+            bus.publish({"type": "transcript_start", "speaker": "assistant"})
+            for ev in state["orch"].handle_stream(text):
+                if ev["type"] == "assistant_delta":
+                    buf += ev["text"]
+                    bus.publish({"type": "transcript_chunk", "text": ev["text"]})
+                elif ev["type"] == "tool_invoked":
+                    bus.publish({"type": "tool_invoked", "name": ev["name"]})
+                elif ev["type"] == "tool_result":
+                    pass  # not surfaced to UI by default
+                elif ev["type"] == "done":
+                    bus.publish({"type": "transcript_end"})
         except Exception as exc:
-            log.exception("orch.handle failed")
+            log.exception("orch.handle_stream failed")
+            bus.publish({"type": "transcript_end"})
             bus.publish({"type": "toast", "level": "error", "message": str(exc)})
             bus.publish({"type": "status", "value": "error"})
         finally:
+            if speaker is not None and buf:
+                bus.publish({"type": "status", "value": "speaking"})
+                try:
+                    speaker.speak(buf)
+                except Exception:
+                    log.exception("speaker.speak failed")
             bus.publish({"type": "status", "value": "idle"})
 
     def _record_and_run() -> None:

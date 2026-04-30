@@ -2,7 +2,8 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass, field
-from voice_assistant.brain import Brain, Message, PlainText, ToolCall
+from typing import Iterator
+from voice_assistant.brain import Brain, Message, PlainText, ToolCall, ContentChunk, ToolCallReady
 from voice_assistant.tools.schema import ToolSpec, ToolResult
 
 log = logging.getLogger(__name__)
@@ -94,3 +95,48 @@ class Orchestrator:
         self.history.append(Message(role="assistant", content=text))
         log.info("assistant: %s", text)
         return text
+
+    def handle_stream(self, text: str) -> Iterator[dict]:
+        """Yield orchestrator events as the brain streams.
+
+        Events: dict with "type" in:
+          - "assistant_delta": {"text": str}
+          - "tool_invoked":    {"name": str, "args": dict}
+          - "tool_result":     {"text": str}
+          - "done":            {}
+        """
+        tool_schemas = [t.to_openai_format() for t in self.tools]
+        messages: list[dict] = [{"role": "user", "content": text}]
+        for _ in range(5):  # bounded tool-call iterations
+            text_buf = ""
+            tool_call: ToolCallReady | None = None
+            for item in self.brain.complete_stream(messages, tool_schemas):
+                if isinstance(item, ContentChunk):
+                    text_buf += item.text
+                    yield {"type": "assistant_delta", "text": item.text}
+                elif isinstance(item, ToolCallReady):
+                    tool_call = item
+
+            if tool_call is None:
+                yield {"type": "done"}
+                return
+
+            yield {"type": "tool_invoked", "name": tool_call.name, "args": tool_call.args}
+            spec = self._tool_by_name(tool_call.name)
+            try:
+                if spec is None:
+                    raise ValueError(f"unknown tool {tool_call.name}")
+                result = spec.func(**tool_call.args)
+                result_text = json.dumps(result.model_dump(), default=str)
+            except Exception as exc:
+                result_text = f"Tool error: {exc}"
+            yield {"type": "tool_result", "text": result_text}
+            # Continue loop: feed result back to brain
+            messages = messages + [
+                {"role": "assistant", "content": text_buf or None,
+                 "tool_calls": [{"id": tool_call.id, "type": "function",
+                                 "function": {"name": tool_call.name,
+                                              "arguments": json.dumps(tool_call.args)}}]},
+                {"role": "tool", "tool_call_id": tool_call.id, "content": result_text},
+            ]
+        yield {"type": "done"}

@@ -4,7 +4,7 @@ import Nav from '../components/Nav.astro';
 import { site } from '../data/site';
 ---
 <Base title={`${site.brand} — talk to your computer`} description={site.subhead}>
-  <a id="top"></a>
+  <a id="top" aria-hidden="true" tabindex="-1"></a>
   <Nav />
   <main class="pt-16"><!-- sections will be added next tasks --></main>
 </Base>

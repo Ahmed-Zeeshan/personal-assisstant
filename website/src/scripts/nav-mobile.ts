@@ -4,9 +4,17 @@ const nav = document.getElementById('site-nav');
 
 if (toggle && panel) {
   const setOpen = (open: boolean) => {
+    if (open) {
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.paddingRight = '';
+      document.body.style.overflow = '';
+    }
     panel.classList.toggle('hidden', !open);
     toggle.setAttribute('aria-expanded', String(open));
-    document.body.style.overflow = open ? 'hidden' : '';
+    toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
   };
   toggle.addEventListener('click', () => setOpen(panel.classList.contains('hidden')));
   panel.querySelectorAll('[data-nav-close]').forEach((el) =>

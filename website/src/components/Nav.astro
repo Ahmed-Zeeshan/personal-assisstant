@@ -22,16 +22,16 @@ import { site } from '../data/site';
       </svg>
     </button>
   </div>
-
-  <div id="nav-panel" class="md:hidden fixed inset-0 top-16 bg-bg/95 backdrop-blur-sm hidden">
-    <nav class="container-page py-8 flex flex-col gap-6 text-lg">
-      {site.navLinks.map((l) => (
-        <a href={l.href} class="py-3 border-b border-border" data-nav-close>{l.label}</a>
-      ))}
-      <a href={site.repoUrl} class="py-3 border-b border-border" data-nav-close>GitHub</a>
-    </nav>
-  </div>
 </header>
+
+<div id="nav-panel" class="md:hidden fixed inset-0 top-16 bg-bg/95 backdrop-blur-sm hidden">
+  <nav class="container-page py-8 flex flex-col gap-6 text-lg">
+    {site.navLinks.map((l) => (
+      <a href={l.href} class="py-3 border-b border-border" data-nav-close>{l.label}</a>
+    ))}
+    <a href={site.repoUrl} class="py-3 border-b border-border" data-nav-close>GitHub</a>
+  </nav>
+</div>
 
 <script>
   import '../scripts/nav-mobile';

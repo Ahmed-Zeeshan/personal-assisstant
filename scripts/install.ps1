@@ -41,7 +41,8 @@ $exe = Join-Path $VaHome '.venv\Scripts\voice-assistant.exe'
 
 Say "installing voice-assistant from $RepoUrl"
 & $pip install --upgrade pip | Out-Null
-& $pip install "voice-assistant[audio,gmail] @ git+$RepoUrl"
+$Extras = if ($env:VA_NO_DESKTOP -eq '1') { 'audio,gmail' } else { 'audio,gmail,desktop' }
+& $pip install "voice-assistant[$Extras] @ git+$RepoUrl"
 
 Say "creating launcher shortcut at $LauncherDir\voice-assistant.cmd"
 @"

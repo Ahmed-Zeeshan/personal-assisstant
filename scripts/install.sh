@@ -63,6 +63,17 @@ if [ "$OS" = "Linux" ]; then
     fi
     warn "install will continue; install espeak-ng later before using voice mode"
   fi
+  if [ -z "${VA_NO_DESKTOP:-}" ]; then
+    # PyWebView on Linux needs WebKit2GTK + GTK3.
+    if ! pkg-config --exists webkit2gtk-4.1 2>/dev/null \
+       && ! pkg-config --exists webkit2gtk-4.0 2>/dev/null; then
+      if   command -v apt-get >/dev/null; then warn "Desktop window needs WebKit2GTK + GTK3. Run: sudo apt-get install -y python3-gi gir1.2-webkit2-4.1 libgtk-3-0"
+      elif command -v dnf     >/dev/null; then warn "Desktop window needs WebKit2GTK + GTK3. Run: sudo dnf install -y python3-gobject webkit2gtk4.1 gtk3"
+      elif command -v pacman  >/dev/null; then warn "Desktop window needs WebKit2GTK + GTK3. Run: sudo pacman -S --needed python-gobject webkit2gtk-4.1 gtk3"
+      fi
+      warn "GUI may not start; CLI fallback is automatic. Set VA_NO_DESKTOP=1 to skip."
+    fi
+  fi
 fi
 
 say "installing into $VA_HOME"
@@ -73,7 +84,9 @@ python3 -m venv "$VA_HOME/.venv"
 
 say "installing voice-assistant from $REPO_URL"
 "$VA_HOME/.venv/bin/pip" install --upgrade pip >/dev/null
-"$VA_HOME/.venv/bin/pip" install "voice-assistant[audio,gmail] @ git+$REPO_URL"
+EXTRAS="audio,gmail"
+if [ -z "${VA_NO_DESKTOP:-}" ]; then EXTRAS="$EXTRAS,desktop"; fi
+"$VA_HOME/.venv/bin/pip" install "voice-assistant[$EXTRAS] @ git+$REPO_URL"
 
 say "linking launcher → $LAUNCHER_DIR/voice-assistant"
 ln -sf "$VA_HOME/.venv/bin/voice-assistant" "$LAUNCHER_DIR/voice-assistant"

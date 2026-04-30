@@ -18,5 +18,8 @@ build/
 website/node_modules/
 website/dist/
 website/.astro/
-src/voice_assistant/desktop/web_dist/
+# web/dist/ is ignored (it's the build artefact root). The packaged copy at
+# src/voice_assistant/desktop/web_dist/ IS tracked because pip install ... @ git+...
+# clones the source and won't rebuild the frontend — without the committed
+# bundle, --gui would 404 the index.html on every fresh install.
 web/dist/

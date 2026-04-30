@@ -1,12 +1,13 @@
-import { copyFileSync, mkdirSync } from 'node:fs';
+import { copyFileSync, mkdirSync, chmodSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, '..');
-const dest = join(repoRoot, 'website', 'public', 'install');
+const dest = join(repoRoot, 'website', 'public');
 
 mkdirSync(dest, { recursive: true });
 copyFileSync(join(here, 'install.sh'),  join(dest, 'install.sh'));
 copyFileSync(join(here, 'install.ps1'), join(dest, 'install.ps1'));
-console.log(`copied install scripts → ${dest}`);
+chmodSync(join(dest, 'install.sh'), 0o755);
+console.log(`copied install scripts → ${dest}/{install.sh,install.ps1}`);

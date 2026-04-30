@@ -1,0 +1,26 @@
+{
+  "name": "voice-assistant-website",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "prebuild": "node ../scripts/copy-install-scripts.mjs",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "check": "astro check && lhci autorun"
+  },
+  "dependencies": {
+    "@astrojs/tailwind": "^5.1.0",
+    "@fontsource/inter": "^5.0.18",
+    "@fontsource/jetbrains-mono": "^5.0.20",
+    "astro": "^4.15.0",
+    "tailwindcss": "^3.4.10"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.3",
+    "@lhci/cli": "^0.14.0",
+    "typescript": "^5.5.4"
+  }
+}

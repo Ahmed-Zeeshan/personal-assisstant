@@ -1,6 +1,6 @@
 [project]
 name = "voice-assistant"
-version = "0.1.0"
+version = "0.1.1"
 description = "Personal voice-controlled assistant for the desktop"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"

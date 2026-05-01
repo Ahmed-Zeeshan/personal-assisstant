@@ -29,6 +29,12 @@ class WizardAnswers:
     audio_trigger: str = "hotkey"
     wake_word: str = "hey_jarvis"
     wake_sensitivity: float = 0.5
+    onboarding_seen: bool = False
+    transparency_acknowledged: bool = False
+    locale: str = "auto"
+    display_theme: str = "default"
+    display_font_size: str = "medium"
+    encrypt_user_data: bool = False
 
 
 def render_config(a: WizardAnswers) -> str:
@@ -72,6 +78,16 @@ def render_config(a: WizardAnswers) -> str:
         "  file: ~/.voice-assistant/voice-assistant.log\n"
         "\n"
         f"avatar: {a.avatar}\n"
+        f"locale: {a.locale}\n"
+        f"onboarding_seen: {str(a.onboarding_seen).lower()}\n"
+        f"transparency_acknowledged: {str(a.transparency_acknowledged).lower()}\n"
+        "\n"
+        "display:\n"
+        f"  theme: {a.display_theme}\n"
+        f"  font_size: {a.display_font_size}\n"
+        "\n"
+        "security:\n"
+        f"  encrypt_user_data: {str(a.encrypt_user_data).lower()}\n"
     )
     user_block = ""
     has_user = a.user_name or a.user_address_as != "none" or a.respond_in != "auto"

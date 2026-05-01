@@ -50,6 +50,11 @@ def _config_to_dict(path: Path) -> dict[str, Any] | None:
         "wake_word": cfg.audio.wake_word,
         "wake_sensitivity": cfg.audio.wake_sensitivity,
         "onboarding_seen": cfg.onboarding_seen,
+        "transparency_acknowledged": getattr(cfg, "transparency_acknowledged", False),
+        "locale": getattr(cfg, "locale", "auto"),
+        "display_theme": getattr(cfg.display, "theme", "default") if hasattr(cfg, "display") else "default",
+        "display_font_size": getattr(cfg.display, "font_size", "medium") if hasattr(cfg, "display") else "medium",
+        "encrypt_user_data": getattr(cfg.security, "encrypt_user_data", False) if hasattr(cfg, "security") else False,
     }
 
 
@@ -70,6 +75,12 @@ def _default_config_dict() -> dict[str, Any]:
         "audio_trigger": "hotkey",
         "wake_word": "hey_jarvis",
         "wake_sensitivity": 0.5,
+        "onboarding_seen": False,
+        "transparency_acknowledged": False,
+        "locale": "auto",
+        "display_theme": "default",
+        "display_font_size": "medium",
+        "encrypt_user_data": False,
     }
 
 
@@ -161,6 +172,12 @@ class Bridge:
                 audio_trigger=cfg.get("audio_trigger") or "hotkey",
                 wake_word=cfg.get("wake_word") or "hey_jarvis",
                 wake_sensitivity=float(cfg.get("wake_sensitivity") or 0.5),
+                onboarding_seen=bool(cfg.get("onboarding_seen", False)),
+                transparency_acknowledged=bool(cfg.get("transparency_acknowledged", False)),
+                locale=cfg.get("locale") or "auto",
+                display_theme=cfg.get("display_theme") or "default",
+                display_font_size=cfg.get("display_font_size") or "medium",
+                encrypt_user_data=bool(cfg.get("encrypt_user_data", False)),
             )
             yaml_text = render_config(answers)
             Config.model_validate(yaml.safe_load(yaml_text))  # validation

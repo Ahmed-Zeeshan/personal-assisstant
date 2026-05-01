@@ -7,7 +7,7 @@ declare global {
       api: {
         start_listening(): Promise<void>;
         stop_listening():  Promise<void>;
-        send_text(text: string): Promise<void>;
+        send_text(text: string, images?: string[]): Promise<void>;
         get_config(): Promise<AppConfig>;
         save_config(cfg: AppConfig & { _secret?: string }): Promise<{ok: boolean; errors?: string[]}>;
         get_history(): Promise<HistoryItem[]>;
@@ -30,7 +30,7 @@ const hasPy = (): boolean => typeof window !== 'undefined' && typeof window.pywe
 export const bridge = {
   startListening: async () => hasPy() ? window.pywebview.api.start_listening() : void 0,
   stopListening:  async () => hasPy() ? window.pywebview.api.stop_listening()  : void 0,
-  sendText:       async (text: string) => hasPy() ? window.pywebview.api.send_text(text) : void 0,
+  sendText:       async (text: string, images?: string[]) => hasPy() ? window.pywebview.api.send_text(text, images) : void 0,
   getConfig:      async (): Promise<AppConfig> => hasPy()
     ? window.pywebview.api.get_config()
     : ({ provider: 'anthropic', model: 'claude-sonnet-4-6', hotkey: 'ctrl+shift+space', allowed_roots: ['~'], ollama_base_url: null } as AppConfig),

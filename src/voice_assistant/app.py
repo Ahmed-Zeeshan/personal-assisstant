@@ -98,7 +98,17 @@ class Orchestrator:
         log.info("assistant: %s", text)
         return text
 
-    def handle_stream(self, text: str) -> Iterator[dict[str, Any]]:
+    @staticmethod
+    def _build_user_content(text: str, images: list[str]) -> Any:
+        """Build user content: string if no images, content-block list otherwise."""
+        if not images:
+            return text
+        blocks: list[dict[str, Any]] = [{"type": "text", "text": text}]
+        for url in images:
+            blocks.append({"type": "image_url", "image_url": {"url": url}})
+        return blocks
+
+    def handle_stream(self, text: str, images: list[str] | None = None) -> Iterator[dict[str, Any]]:
         """Yield orchestrator events as the brain streams.
 
         Events: dict with "type" in:
@@ -106,9 +116,18 @@ class Orchestrator:
           - "tool_invoked":    {"name": str, "args": dict}
           - "tool_result":     {"text": str}
           - "done":            {}
+
+        When *images* are supplied (base64 data URLs), the first user message is
+        sent as a multi-modal content block following OpenAI/Anthropic format.
+        LiteLLM forwards these to vision-capable models; models that don't
+        support image_url receive only the text block.
         """
+        imgs = images or []
+        if imgs:
+            log.debug("handle_stream: %d image(s) attached", len(imgs))
         tool_schemas = [t.to_openai_format() for t in self.tools]
-        messages: list[dict[str, Any]] = [{"role": "user", "content": text}]
+        user_content = self._build_user_content(text, imgs)
+        messages: list[dict[str, Any]] = [{"role": "user", "content": user_content}]
         for _ in range(5):  # bounded tool-call iterations
             text_buf = ""
             tool_call: ToolCallReady | None = None

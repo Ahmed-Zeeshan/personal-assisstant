@@ -181,7 +181,7 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
             new_cfg.brain.model,
         )
 
-    def _do_request(text: str) -> None:
+    def _do_request(text: str, images: list[str] | None = None) -> None:
         history.append("user", text)
         bus.publish({"type": "transcript", "speaker": "user", "text": text})
         bus.publish({"type": "status", "value": "thinking"})
@@ -195,7 +195,7 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
                 log.warning("failed to create speaker for request: %s", exc)
         try:
             bus.publish({"type": "transcript_start", "speaker": "assistant"})
-            for ev in active_orch[0].handle_stream(text):
+            for ev in active_orch[0].handle_stream(text, images=images or []):
                 if ev["type"] == "assistant_delta":
                     buf += ev["text"]
                     bus.publish({"type": "transcript_chunk", "text": ev["text"]})
@@ -246,8 +246,8 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
             bus.publish({"type": "toast", "level": "error", "message": str(exc)})
             bus.publish({"type": "status", "value": "idle"})
 
-    def _on_text(text: str) -> None:
-        threading.Thread(target=_do_request, args=(text,), daemon=True).start()
+    def _on_text(text: str, images: list[str] | None = None) -> None:
+        threading.Thread(target=_do_request, args=(text, images), daemon=True).start()
 
     def _on_listen_start() -> None:
         threading.Thread(target=_record_and_run, daemon=True).start()

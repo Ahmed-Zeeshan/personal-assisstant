@@ -13,18 +13,22 @@
  */
 import { T } from '../i18n';
 
+export type ComposerSubmitPayload = { text: string; images: string[] };
+
 export class Composer {
   private el: HTMLElement;
   private input: HTMLTextAreaElement;
   private micBtn: HTMLButtonElement;
   private sendBtn: HTMLButtonElement;
-  private submitHandler: (text: string) => void = () => {};
+  private submitHandler: (payload: ComposerSubmitPayload) => void = () => {};
   private recordHandler: () => void = () => {};
+  private pendingImages: string[] = [];
 
   constructor(parent: HTMLElement) {
     this.el = document.createElement('footer');
     this.el.className = 'va-composer';
     this.el.innerHTML = `
+      <div class="va-composer-image-strip hidden" data-image-strip aria-label="${T('composer.images_label')}"></div>
       <div class="va-composer-inner glass">
         <button data-record type="button" aria-label="${T('composer.start_listening')}" class="va-mic-btn" title="${T('composer.start_listening')}">
           <span data-mic-icon class="va-mic-icon">
@@ -56,7 +60,7 @@ export class Composer {
     this._injectStyles();
   }
 
-  onSubmit(handler: (text: string) => void): void { this.submitHandler = handler; }
+  onSubmit(handler: (payload: ComposerSubmitPayload) => void): void { this.submitHandler = handler; }
   onRecord(handler: () => void): void { this.recordHandler = handler; }
 
   setListening(active: boolean): void {
@@ -85,15 +89,90 @@ export class Composer {
 
     this.sendBtn.addEventListener('click', () => this._submit());
     this.micBtn.addEventListener('click', () => this.recordHandler());
+
+    // Image paste
+    this.el.addEventListener('paste', (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of Array.from(items)) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) void this._addImageFile(file);
+        }
+      }
+    });
+
+    // Image drag-and-drop
+    this.el.addEventListener('dragover', (e) => {
+      if (e.dataTransfer?.types.includes('Files')) {
+        e.preventDefault();
+        this.el.classList.add('va-composer--drag');
+      }
+    });
+    this.el.addEventListener('dragleave', () => {
+      this.el.classList.remove('va-composer--drag');
+    });
+    this.el.addEventListener('drop', (e: DragEvent) => {
+      e.preventDefault();
+      this.el.classList.remove('va-composer--drag');
+      const files = e.dataTransfer?.files;
+      if (!files) return;
+      for (const file of Array.from(files)) {
+        if (file.type.startsWith('image/')) void this._addImageFile(file);
+      }
+    });
   }
 
   private _submit(): void {
     const text = this.input.value.trim();
-    if (!text) return;
-    this.submitHandler(text);
+    if (!text && this.pendingImages.length === 0) return;
+    this.submitHandler({ text, images: this.pendingImages });
+    this.pendingImages = [];
+    this._refreshImageStrip();
     this.input.value = '';
     this._resize();
     this._toggleSend();
+  }
+
+  private async _addImageFile(file: File): Promise<void> {
+    const dataUrl = await this._fileToDataUrl(file);
+    this.pendingImages.push(dataUrl);
+    this._refreshImageStrip();
+    this._toggleSend();
+  }
+
+  private _fileToDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  private _refreshImageStrip(): void {
+    const strip = this.el.querySelector<HTMLElement>('[data-image-strip]')!;
+    if (this.pendingImages.length === 0) {
+      strip.innerHTML = '';
+      strip.classList.add('hidden');
+      return;
+    }
+    strip.classList.remove('hidden');
+    strip.innerHTML = this.pendingImages.map((url, i) => `
+      <div class="va-img-thumb" data-idx="${i}">
+        <img src="${url}" alt="${T('composer.image_thumbnail')} ${i + 1}" class="va-img-thumb-img" />
+        <button type="button" class="va-img-thumb-remove" aria-label="${T('composer.remove_image')} ${i + 1}" data-remove="${i}">×</button>
+      </div>
+    `).join('');
+    strip.querySelectorAll<HTMLButtonElement>('[data-remove]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.remove ?? '0', 10);
+        this.pendingImages.splice(idx, 1);
+        this._refreshImageStrip();
+        this._toggleSend();
+      });
+    });
   }
 
   private _resize(): void {
@@ -104,8 +183,8 @@ export class Composer {
   }
 
   private _toggleSend(): void {
-    const hasText = this.input.value.trim().length > 0;
-    this.sendBtn.classList.toggle('hidden', !hasText);
+    const hasContent = this.input.value.trim().length > 0 || this.pendingImages.length > 0;
+    this.sendBtn.classList.toggle('hidden', !hasContent);
   }
 
   private _injectStyles(): void {
@@ -164,6 +243,52 @@ export class Composer {
       .va-send-btn { background: rgba(149,128,255,0.2); border-color: rgba(149,128,255,0.4); color: #c5bfff; }
       .va-send-btn:hover { background: rgba(149,128,255,0.35); }
 
+      /* Image strip */
+      .va-composer-image-strip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 8px 12px 0;
+      }
+      .va-composer-image-strip.hidden { display: none; }
+      .va-img-thumb {
+        position: relative;
+        width: 64px;
+        height: 64px;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid rgba(149,128,255,0.3);
+        flex-shrink: 0;
+      }
+      .va-img-thumb-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .va-img-thumb-remove {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: rgba(0,0,0,0.7);
+        color: #fff;
+        border: none;
+        font-size: 12px;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+        line-height: 1;
+        padding: 0;
+      }
+      .va-img-thumb-remove:hover { background: #ff5050; }
+      /* Drag-over indicator */
+      .va-composer--drag .va-composer-inner {
+        border: 2px dashed rgba(149,128,255,0.6);
+        background: rgba(149,128,255,0.06);
+      }
       .va-mic-icon.hidden, .va-listen-dot.hidden, .va-send-btn.hidden { display: none; }
       .va-mic-icon { display: flex; }
 

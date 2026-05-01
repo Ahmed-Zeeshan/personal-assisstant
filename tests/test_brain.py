@@ -171,3 +171,8 @@ def test_system_prompt_none():
     # No address line at all — the second line should be the rule about response length
     lines = p.splitlines()
     assert "Address" not in lines[1]
+
+
+def test_system_prompt_includes_language_rule():
+    p = _build_system_prompt(UserConfig(name="Zeeshan", address_as="first_name"))
+    assert "language" in p.lower()

@@ -41,6 +41,7 @@ wake = [
     "openwakeword>=0.6",
     "onnxruntime>=1.17",
 ]
+security = ["cryptography>=42.0", "keyring>=24"]
 dev = [
     "pytest>=8.0",
     "pytest-mock>=3.12",
@@ -104,5 +105,5 @@ exclude = [
 
 # Pragmatic: third-party libs without good stubs
 [[tool.mypy.overrides]]
-module = ["litellm.*", "duckduckgo_search.*", "trafilatura.*", "webview.*", "pyaudio.*", "sounddevice.*", "piper.*", "pynput.*", "playwright.*", "sqlite_vec.*", "google.*", "googleapiclient.*", "loguru.*", "google_auth_oauthlib.*", "faster_whisper.*", "openwakeword.*", "onnxruntime.*"]
+module = ["litellm.*", "duckduckgo_search.*", "trafilatura.*", "webview.*", "pyaudio.*", "sounddevice.*", "piper.*", "pynput.*", "playwright.*", "sqlite_vec.*", "google.*", "googleapiclient.*", "loguru.*", "google_auth_oauthlib.*", "faster_whisper.*", "openwakeword.*", "onnxruntime.*", "keyring.*", "cryptography.*"]
 ignore_missing_imports = true

@@ -71,6 +71,19 @@ class LoggingConfig(BaseModel):
     file: Path
 
 
+class SecurityConfig(BaseModel):
+    """Optional at-rest encryption for sensitive user data files."""
+
+    encrypt_user_data: bool = False
+
+
+class DisplayConfig(BaseModel):
+    """Display preferences (high-contrast theme, font size)."""
+
+    theme: Literal["default", "hc"] = "default"
+    font_size: Literal["small", "medium", "large", "xl"] = "medium"
+
+
 class Config(BaseModel):
     brain: BrainConfig
     stt: STTConfig
@@ -81,6 +94,10 @@ class Config(BaseModel):
     logging: LoggingConfig
     user: UserConfig = Field(default_factory=UserConfig)
     avatar: str = Field(default="aria")  # UI metadata: aria | liam | sage
+    security: SecurityConfig = Field(default_factory=SecurityConfig)
+    display: DisplayConfig = Field(default_factory=DisplayConfig)
+    locale: str = "auto"  # "auto" or BCP-47 language code e.g. "en", "ur", "hi"
+    transparency_acknowledged: bool = False  # AI Act first-run disclosure
 
 
 def load_config(path: Path) -> Config:

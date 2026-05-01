@@ -31,7 +31,7 @@ class OpenAISpeaker(Speaker):
             return
         try:
             import sounddevice as sd
-            import soundfile as sf  # type: ignore[import-not-found]
+            import soundfile as sf  # type: ignore[import-untyped]
             from openai import OpenAI
         except ImportError as exc:
             raise RuntimeError(

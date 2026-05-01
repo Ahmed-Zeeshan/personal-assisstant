@@ -1,4 +1,10 @@
-"""Append-only JSONL conversation history."""
+"""Append-only JSONL conversation history.
+
+When *encrypt* is True each line is individually Fernet-encrypted (base64
+token + newline).  Lines written without encryption and encrypted lines can
+NOT be mixed in the same file — encryption is opt-in and applies only to new
+files / new deployments.
+"""
 
 from __future__ import annotations
 
@@ -13,10 +19,12 @@ log = logging.getLogger(__name__)
 
 
 class History:
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, *, encrypt: bool = False) -> None:
         self._path = path
         self._path.parent.mkdir(parents=True, exist_ok=True)
+        self._encrypt = encrypt
 
+    # ------------------------------------------------------------------
     def append(self, speaker: str, text: str, **extra: Any) -> None:
         rec: dict[str, Any] = {
             "speaker": speaker,
@@ -24,8 +32,15 @@ class History:
             "ts": datetime.now(UTC).isoformat(),
             **extra,
         }
+        raw = json.dumps(rec)
+        if self._encrypt:
+            from voice_assistant.security.encryption import encrypt_bytes
+
+            line = encrypt_bytes(raw.encode()).decode() + "\n"
+        else:
+            line = raw + "\n"
         with self._path.open("a", encoding="utf-8") as f:
-            f.write(json.dumps(rec) + "\n")
+            f.write(line)
 
     def load_recent(self, n: int = 50) -> list[dict[str, Any]]:
         if not self._path.exists():
@@ -37,6 +52,15 @@ class History:
                 line = raw_line.strip()
                 if not line:
                     continue
+                # Try decryption first (if encrypt mode); fall back to plain JSON.
+                if self._encrypt:
+                    try:
+                        from voice_assistant.security.encryption import decrypt_bytes
+
+                        line = decrypt_bytes(line.encode()).decode()
+                    except Exception:  # noqa: BLE001
+                        log.debug("skipping undecryptable history line")
+                        continue
                 try:
                     rec = json.loads(line)
                 except json.JSONDecodeError:

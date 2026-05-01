@@ -42,10 +42,19 @@ wake = [
     "onnxruntime>=1.17",
 ]
 security = ["cryptography>=42.0", "keyring>=24"]
+vad = [
+    # Silero VAD: lazy-imported by voice_assistant.audio.vad
+    # Requires PyTorch; install torch separately for your platform.
+    "silero-vad>=4",
+]
+e2e = [
+    "pytest-playwright>=0.5",
+]
 dev = [
     "pytest>=8.0",
     "pytest-mock>=3.12",
     "pytest-cov>=4.0",
+    "pytest-benchmark>=4",
     "ruff>=0.9.0",
     "mypy>=1.8",
     "hypothesis>=6.100",
@@ -105,5 +114,5 @@ exclude = [
 
 # Pragmatic: third-party libs without good stubs
 [[tool.mypy.overrides]]
-module = ["litellm.*", "duckduckgo_search.*", "trafilatura.*", "webview.*", "pyaudio.*", "sounddevice.*", "piper.*", "pynput.*", "playwright.*", "sqlite_vec.*", "google.*", "googleapiclient.*", "loguru.*", "google_auth_oauthlib.*", "faster_whisper.*", "openwakeword.*", "onnxruntime.*", "keyring.*"]
+module = ["litellm.*", "duckduckgo_search.*", "trafilatura.*", "webview.*", "pyaudio.*", "sounddevice.*", "piper.*", "pynput.*", "playwright.*", "sqlite_vec.*", "google.*", "googleapiclient.*", "loguru.*", "google_auth_oauthlib.*", "faster_whisper.*", "openwakeword.*", "onnxruntime.*", "keyring.*", "silero_vad.*", "torch.*"]
 ignore_missing_imports = true

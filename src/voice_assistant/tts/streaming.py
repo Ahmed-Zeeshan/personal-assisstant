@@ -4,6 +4,13 @@ Used by the orchestrator's stream path: we feed each `assistant_delta` text
 chunk into a `StreamingSentenceChunker`. Whenever a sentence completes, it's
 queued for synthesis on a background thread, and the chunker carries on
 buffering the next.
+
+VAD barge-in
+------------
+Set :attr:`SentenceQueueSpeaker.interrupt` to True from any thread to stop
+the speaker at the next sentence boundary. The CLI wires a VAD listener that
+sets this flag when the user starts talking, then immediately starts recording
+user input.
 """
 
 from __future__ import annotations
@@ -66,6 +73,13 @@ class SentenceQueueSpeaker:
     """Wraps a Speaker. `enqueue(text)` adds to the playback queue.
     Synthesis + playback happen on a background thread, sequential.
     `wait()` blocks until the queue is drained.
+
+    Barge-in / VAD interruption
+    ----------------------------
+    Setting :attr:`interrupt` to ``True`` from any thread causes the playback
+    loop to drain and discard remaining sentences at the next opportunity
+    (i.e. between sentences, not mid-phoneme).  The flag is reset to ``False``
+    automatically after the flush.
     """
 
     _SENTINEL = object()
@@ -75,6 +89,7 @@ class SentenceQueueSpeaker:
         self._q: queue.Queue[object] = queue.Queue()
         self._chunker = StreamingSentenceChunker()
         self._thread = threading.Thread(target=self._run, daemon=True, name="va-tts")
+        self.interrupt: bool = False  # set from another thread to trigger barge-in
         self._thread.start()
 
     def feed(self, text_delta: str) -> None:
@@ -89,12 +104,27 @@ class SentenceQueueSpeaker:
     def wait(self) -> None:
         self._q.join()
 
+    def _drain_queue(self) -> None:
+        """Discard all pending items in the queue (called on barge-in)."""
+        while True:
+            try:
+                self._q.get_nowait()
+                self._q.task_done()
+            except queue.Empty:
+                break
+
     def _run(self) -> None:
         while True:
             item = self._q.get()
             try:
                 if item is self._SENTINEL:
                     return
+                # Check for barge-in before speaking each sentence.
+                if self.interrupt:
+                    log.debug("SentenceQueueSpeaker: barge-in interrupt — draining queue")
+                    self.interrupt = False
+                    self._drain_queue()
+                    continue
                 try:
                     self._speaker.speak(str(item))
                 except Exception:

@@ -12,12 +12,14 @@ Opt-in: encryption is disabled by default.  Set
 CHANGELOG note: encryption applies to *new* writes only — existing plaintext
 files are not migrated automatically.
 """
+
 from __future__ import annotations
 
 import logging
 import os
 import stat
 from pathlib import Path
+from typing import Any
 
 log = logging.getLogger(__name__)
 
@@ -66,7 +68,9 @@ class MasterKey:
                     return bytes.fromhex(data.decode())
                 except ValueError:
                     pass
-            log.warning("Encryption key file %s has unexpected length; regenerating", self._key_file)
+            log.warning(
+                "Encryption key file %s has unexpected length; regenerating", self._key_file
+            )
         return None
 
     def _create(self) -> bytes:
@@ -78,22 +82,22 @@ class MasterKey:
 
     def _keyring_get(self) -> bytes | None:
         try:
-            import keyring  # type: ignore[import-untyped]
+            import keyring  # type: ignore[import-untyped,unused-ignore]
 
             val = keyring.get_password(_KEYRING_SERVICE, _KEYRING_USERNAME)
             if val is not None:
-                return bytes.fromhex(val)
-        except Exception as exc:  # noqa: BLE001
+                return bytes.fromhex(str(val))
+        except Exception as exc:
             log.debug("keyring unavailable for read: %s", exc)
         return None
 
     def _keyring_set(self, key: bytes) -> bool:
         try:
-            import keyring  # type: ignore[import-untyped]
+            import keyring  # type: ignore[import-untyped,unused-ignore]
 
             keyring.set_password(_KEYRING_SERVICE, _KEYRING_USERNAME, key.hex())
             return True
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             log.debug("keyring unavailable for write (%s); using key file", exc)
             return False
 
@@ -108,9 +112,9 @@ class MasterKey:
 _master_key = MasterKey()
 
 
-def _fernet(key: bytes | None = None):  # type: ignore[no-untyped-def]
+def _fernet(key: bytes | None = None) -> Any:
     """Return a Fernet instance bound to *key* (or the master key)."""
-    from cryptography.fernet import Fernet  # type: ignore[import-untyped]
+    from cryptography.fernet import Fernet
 
     raw = key if key is not None else _master_key.get()
     # Fernet requires a 32-byte URL-safe-base64 key.
@@ -127,7 +131,7 @@ def _fernet(key: bytes | None = None):  # type: ignore[no-untyped-def]
 
 def encrypt_bytes(data: bytes, *, key: bytes | None = None) -> bytes:
     """Encrypt *data* and return the Fernet token (bytes)."""
-    return _fernet(key).encrypt(data)
+    return bytes(_fernet(key).encrypt(data))
 
 
 def decrypt_bytes(blob: bytes, *, key: bytes | None = None) -> bytes:
@@ -138,7 +142,7 @@ def decrypt_bytes(blob: bytes, *, key: bytes | None = None) -> bytes:
     from cryptography.fernet import InvalidToken
 
     try:
-        return _fernet(key).decrypt(blob)
+        return bytes(_fernet(key).decrypt(blob))
     except Exception as exc:
         raise InvalidToken("Decryption failed — wrong key or corrupt data") from exc
 

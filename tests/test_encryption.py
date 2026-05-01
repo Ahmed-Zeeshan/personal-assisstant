@@ -1,9 +1,9 @@
 """Tests for voice_assistant.security.encryption."""
+
 from __future__ import annotations
 
 import os
 import stat
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -15,7 +15,6 @@ from voice_assistant.security.encryption import (
     encrypt_bytes,
     encrypt_file,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -123,8 +122,6 @@ def test_master_key_creates_and_reloads(tmp_path: Path) -> None:
 def test_master_key_file_mode(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """When keyring is unavailable, master key is written to file at mode 0600."""
     key_file = tmp_path / ".master.key"
-
-    from voice_assistant.security import encryption as enc_mod
 
     # Make keyring_set always fail so the key-file path is exercised.
     monkeypatch.setattr(MasterKey, "_keyring_set", lambda self, key: False)

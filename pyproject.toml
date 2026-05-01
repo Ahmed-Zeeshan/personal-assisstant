@@ -105,5 +105,5 @@ exclude = [
 
 # Pragmatic: third-party libs without good stubs
 [[tool.mypy.overrides]]
-module = ["litellm.*", "duckduckgo_search.*", "trafilatura.*", "webview.*", "pyaudio.*", "sounddevice.*", "piper.*", "pynput.*", "playwright.*", "sqlite_vec.*", "google.*", "googleapiclient.*", "loguru.*", "google_auth_oauthlib.*", "faster_whisper.*", "openwakeword.*", "onnxruntime.*", "keyring.*", "cryptography.*"]
+module = ["litellm.*", "duckduckgo_search.*", "trafilatura.*", "webview.*", "pyaudio.*", "sounddevice.*", "piper.*", "pynput.*", "playwright.*", "sqlite_vec.*", "google.*", "googleapiclient.*", "loguru.*", "google_auth_oauthlib.*", "faster_whisper.*", "openwakeword.*", "onnxruntime.*", "keyring.*"]
 ignore_missing_imports = true

@@ -1,5 +1,5 @@
 /**
- * Settings drawer — tabbed (Brain / Voice / Audio / Identity / Privacy).
+ * Settings drawer — tabbed (Brain / Voice / Audio / Identity / Privacy & Display).
  *
  * Public API (unchanged):
  *   open(cfg)        – open the drawer populated with cfg
@@ -7,13 +7,14 @@
  *   onSave(handler)  – register async save callback
  *
  * Tabs:
- *   Brain    – provider, model, API key, reply-language
- *   Voice    – avatar, voice, STT language
- *   Audio    – trigger (hotkey/wake-word), hotkey or wake-word sub-form
- *   Identity – name, address-as, title
- *   Privacy  – allowed folders
+ *   Brain            – provider, model, API key, reply-language
+ *   Voice            – avatar, voice, STT language
+ *   Audio            – trigger (hotkey/wake-word), hotkey or wake-word sub-form
+ *   Identity         – name, address-as, title
+ *   Privacy & Display – allowed folders + high-contrast + font-size
  */
 import type { AppConfig, Provider } from '../types';
+import { T } from '../i18n';
 
 // 24 reply-language options + auto
 const REPLY_LANGUAGES: { code: string; label: string }[] = [
@@ -49,13 +50,21 @@ const WAKE_WORDS = ['hey_jarvis', 'alexa', 'hey_mycroft', 'hey_rhasspy'];
 
 type TabId = 'brain' | 'voice' | 'audio' | 'identity' | 'privacy';
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: 'brain',    label: 'Brain' },
-  { id: 'voice',    label: 'Voice' },
-  { id: 'audio',    label: 'Audio' },
-  { id: 'identity', label: 'Identity' },
-  { id: 'privacy',  label: 'Privacy' },
+const TABS: { id: TabId; labelKey: string }[] = [
+  { id: 'brain',    labelKey: 'tab.brain' },
+  { id: 'voice',    labelKey: 'tab.voice' },
+  { id: 'audio',    labelKey: 'tab.audio' },
+  { id: 'identity', labelKey: 'tab.identity' },
+  { id: 'privacy',  labelKey: 'tab.privacy' },
 ];
+
+/** Known LLM provider privacy policy URLs. */
+const PROVIDER_PRIVACY_URLS: Record<string, string> = {
+  anthropic: 'https://www.anthropic.com/legal/privacy',
+  openai:    'https://openai.com/policies/privacy-policy',
+  gemini:    'https://policies.google.com/privacy',
+  ollama:    'https://ollama.com/privacy',
+};
 
 export class Settings {
   private el: HTMLElement;
@@ -74,18 +83,18 @@ export class Settings {
       <div class="va-settings-backdrop"></div>
       <div class="va-settings-panel">
         <header class="va-settings-header">
-          <h2 class="va-settings-title">Settings</h2>
-          <button data-close type="button" aria-label="Close settings" class="va-settings-close">×</button>
+          <h2 class="va-settings-title">${T('settings.title')}</h2>
+          <button data-close type="button" aria-label="${T('settings.close')}" class="va-settings-close">×</button>
         </header>
         <div class="va-settings-body">
           <!-- Vertical tab bar -->
           <nav class="va-tab-nav" role="tablist" aria-label="Settings sections">
             ${TABS.map(t => `
-              <button role="tab" data-tab="${t.id}" type="button"
+              <button role="tab" id="va-tab-btn-${t.id}" data-tab="${t.id}" type="button"
                 class="va-tab-btn${t.id === this.activeTab ? ' is-active' : ''}"
                 aria-selected="${t.id === this.activeTab}"
                 aria-controls="va-tab-${t.id}">
-                ${t.label}
+                ${T(t.labelKey)}
               </button>
             `).join('')}
           </nav>
@@ -95,9 +104,11 @@ export class Settings {
           </div>
         </div>
         <div data-error class="hidden va-settings-error"></div>
+        <!-- AI Act footer disclosure -->
+        <p data-ai-footer class="va-settings-ai-footer"></p>
         <footer class="va-settings-footer">
-          <button data-cancel type="button" class="va-btn va-btn--ghost">Cancel</button>
-          <button data-save   type="button" class="va-btn va-btn--primary">Save</button>
+          <button data-cancel type="button" class="va-btn va-btn--ghost">${T('settings.cancel')}</button>
+          <button data-save   type="button" class="va-btn va-btn--primary">${T('settings.save')}</button>
         </footer>
       </div>
     `;
@@ -312,14 +323,32 @@ export class Settings {
     });
   }
 
-  // ── Privacy tab ───────────────────────────────────────────────────────────
+  // ── Privacy & Display tab ─────────────────────────────────────────────────
   private _buildPrivacyPanel(): void {
     const p = this._panel('privacy');
     p.innerHTML = `
       <div class="va-field">
-        <label class="va-label">Allowed folders (comma-separated)</label>
+        <label class="va-label">${T('allowed_folders.label')}</label>
         <input data-field="roots" class="va-input" placeholder="~" />
-        <p class="va-hint">The assistant may only read/write files in these directories.</p>
+        <p class="va-hint">${T('allowed_folders.hint')}</p>
+      </div>
+      <!-- Display group -->
+      <div class="va-section-divider"></div>
+      <p class="va-section-heading">${T('display.group')}</p>
+      <div class="va-field">
+        <label class="va-label va-label--checkbox">
+          <input data-field="display_hc" type="checkbox" />
+          ${T('display.high_contrast')}
+        </label>
+      </div>
+      <div class="va-field">
+        <label class="va-label" for="display-font-size">${T('display.font_size')}</label>
+        <select data-field="display_font_size" id="display-font-size" class="va-select">
+          <option value="small">${T('display.font_small')}</option>
+          <option value="medium" selected>${T('display.font_medium')}</option>
+          <option value="large">${T('display.font_large')}</option>
+          <option value="xl">${T('display.font_xl')}</option>
+        </select>
       </div>
     `;
   }
@@ -359,9 +388,17 @@ export class Settings {
     (identity.querySelector('[data-field="user_title"]') as HTMLInputElement).value = cfg.user_title || '';
     this._refreshTitleRow(identity);
 
-    // Privacy
+    // Privacy & Display
     const privacy = this._panel('privacy');
     (privacy.querySelector('[data-field="roots"]') as HTMLInputElement).value = cfg.allowed_roots.join(', ');
+    (privacy.querySelector('[data-field="display_hc"]') as HTMLInputElement).checked = cfg.display_theme === 'hc';
+    (privacy.querySelector('[data-field="display_font_size"]') as HTMLSelectElement).value = cfg.display_font_size ?? 'medium';
+
+    // AI Act footer
+    const footerEl = this.el.querySelector<HTMLElement>('[data-ai-footer]')!;
+    const provider = cfg.provider;
+    const privacyUrl = PROVIDER_PRIVACY_URLS[provider] ?? '#';
+    footerEl.innerHTML = `AI assistant powered by <strong>${provider}</strong>. Inputs are sent to <a href="${privacyUrl}" target="_blank" rel="noopener noreferrer" class="va-ai-footer-link">${provider} privacy policy</a>.`;
   }
 
   private _refreshAudioTrigger(panel: HTMLElement): void {
@@ -507,6 +544,8 @@ export class Settings {
 
     const roots = (privacy.querySelector('[data-field="roots"]') as HTMLInputElement).value
       .split(',').map(s => s.trim()).filter(Boolean);
+    const display_hc = (privacy.querySelector('[data-field="display_hc"]') as HTMLInputElement).checked;
+    const display_font_size = (privacy.querySelector('[data-field="display_font_size"]') as HTMLSelectElement).value as AppConfig['display_font_size'];
 
     const cfg: AppConfig & { _secret?: string } = {
       provider, model, hotkey,
@@ -516,6 +555,11 @@ export class Settings {
       respond_in,
       voice, stt_language, avatar,
       audio_trigger, wake_word, wake_sensitivity,
+      display_theme: display_hc ? 'hc' : 'default',
+      display_font_size: display_font_size ?? 'medium',
+      // preserve pass-through fields
+      locale: this.currentCfg?.locale,
+      transparency_acknowledged: this.currentCfg?.transparency_acknowledged,
     };
     if (provider !== 'ollama' && secret) cfg._secret = secret;
     return cfg;
@@ -611,20 +655,18 @@ export class Settings {
         padding: 10px 14px;
         font-size: 0.78rem;
         font-weight: 500;
-        text-align: left;
+        text-align: start;
         background: transparent;
         border: none;
         color: rgba(180,185,210,0.6);
         cursor: pointer;
         border-radius: 0;
         transition: background 150ms ease, color 150ms ease;
-        border-left: 2px solid transparent;
       }
       .va-tab-btn:hover { background: rgba(255,255,255,0.04); color: rgba(200,205,230,0.9); }
       .va-tab-btn.is-active {
         color: #c5bfff;
         background: rgba(149,128,255,0.1);
-        border-left-color: #9580ff;
       }
 
       /* Tab panels */
@@ -717,6 +759,77 @@ export class Settings {
         border-top: 1px solid rgba(255,255,255,0.05);
       }
       .va-settings-error.hidden { display: none; }
+
+      /* AI Act footer */
+      .va-settings-ai-footer {
+        padding: 6px 18px;
+        font-size: 0.68rem;
+        color: rgba(160,165,190,0.45);
+        border-top: 1px solid rgba(255,255,255,0.04);
+        margin: 0;
+      }
+      .va-ai-footer-link {
+        color: rgba(149,128,255,0.6);
+        text-decoration: none;
+      }
+      .va-ai-footer-link:hover { text-decoration: underline; }
+
+      /* Display section divider */
+      .va-section-divider {
+        height: 1px;
+        background: rgba(255,255,255,0.07);
+        margin: 4px 0;
+      }
+      .va-section-heading {
+        font-size: 0.68rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: rgba(180,185,210,0.4);
+        margin: 0;
+      }
+      /* Checkbox label */
+      .va-label--checkbox {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        font-size: 0.83rem;
+        color: rgba(180,185,210,0.8);
+      }
+      .va-label--checkbox input[type="checkbox"] { accent-color: #9580ff; }
+
+      /* RTL: flip the active-tab indicator from left to inline-start */
+      .va-tab-btn {
+        border-inline-start: 2px solid transparent;
+        border-left: none;
+      }
+      .va-tab-btn.is-active { border-inline-start-color: #9580ff; }
+
+      /* High-contrast overrides */
+      [data-theme="hc"] {
+        --color-bg: #000;
+        --color-fg: #fff;
+        --color-surface: #1a1a1a;
+        --color-border: #fff;
+        --color-accent: #ffd400;
+      }
+      [data-theme="hc"] .va-settings-panel,
+      [data-theme="hc"] .va-transparency-panel {
+        background: #1a1a1a;
+        border-color: #fff;
+        color: #fff;
+      }
+      [data-theme="hc"] .va-input,
+      [data-theme="hc"] .va-select {
+        background: #000;
+        color: #fff;
+        border-color: #fff;
+      }
+      [data-theme="hc"] .va-btn--primary {
+        background: #ffd400;
+        color: #000;
+      }
     `;
     document.head.appendChild(s);
   }

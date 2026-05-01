@@ -58,7 +58,7 @@ class History:
                         from voice_assistant.security.encryption import decrypt_bytes
 
                         line = decrypt_bytes(line.encode()).decode()
-                    except Exception:  # noqa: BLE001
+                    except Exception:
                         log.debug("skipping undecryptable history line")
                         continue
                 try:

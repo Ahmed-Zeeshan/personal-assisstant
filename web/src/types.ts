@@ -21,6 +21,15 @@ export interface AppConfig {
   available_voices?: { id: string; label: string; language: string; gender: string; engine: string; notes: string }[];
   available_stt_languages?: { code: string; label: string }[];
   available_avatars?: string[];
+  /** BCP-47 locale code or "auto" */
+  locale?: string;
+  /** Display preferences */
+  display_theme?: 'default' | 'hc';
+  display_font_size?: 'small' | 'medium' | 'large' | 'xl';
+  /** AI Act: whether the first-run disclosure has been acknowledged */
+  transparency_acknowledged?: boolean;
+  /** Used for direction detection when respond_in is "auto" */
+  user_address_language?: string;
 }
 
 export type HistoryItem = { speaker: 'user' | 'assistant'; text: string; ts?: string };

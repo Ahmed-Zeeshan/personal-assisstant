@@ -8,9 +8,11 @@ import { Composer } from './components/Composer';
 import { Settings } from './components/Settings';
 import { Toast } from './components/Toast';
 import { HistoryPanel } from './components/HistoryPanel';
+import { TransparencyModal } from './components/TransparencyModal';
 import { bus } from './state';
 import { bridge } from './bridge';
 import type { AppConfig } from './types';
+import { setLocale } from './i18n';
 
 // ── Root layout ────────────────────────────────────────────────────────────
 const root = document.getElementById('app')!;
@@ -40,10 +42,37 @@ const avatar     = new Avatar(main, 'aria');
 const wave       = new ListeningWave(main);
 const transcript = new ChatTranscript(main);
 const composer   = new Composer(main);
-const settings   = new Settings(document.body);
-const toast      = new Toast(document.body);
+const settings          = new Settings(document.body);
+const toast             = new Toast(document.body);
+const transparencyModal = new TransparencyModal(document.body);
 
 let currentConfig: AppConfig | null = null;
+
+// ── RTL / language direction ────────────────────────────────────────────────
+function setDirection(lang: string): void {
+  const rtl = ['ur', 'ar', 'he', 'fa'].includes(lang);
+  document.documentElement.dir = rtl ? 'rtl' : 'ltr';
+  document.documentElement.lang = lang || 'en';
+}
+
+// ── Display preferences (high-contrast, font-size) ─────────────────────────
+function applyDisplayPrefs(cfg: AppConfig): void {
+  const html = document.documentElement;
+  // High-contrast theme
+  if (cfg.display_theme === 'hc') {
+    html.setAttribute('data-theme', 'hc');
+  } else {
+    html.removeAttribute('data-theme');
+  }
+  // Font size
+  const sizeMap: Record<string, string> = {
+    small:  '87.5%',
+    medium: '100%',
+    large:  '112.5%',
+    xl:     '125%',
+  };
+  html.style.fontSize = sizeMap[cfg.display_font_size ?? 'medium'] ?? '100%';
+}
 
 // ── Layout styles ───────────────────────────────────────────────────────────
 (function injectLayoutStyles() {
@@ -112,6 +141,29 @@ bus.on((e) => {
     case 'config':
       currentConfig = e.cfg;
       avatar.setAvatar(currentConfig.avatar ?? 'aria');
+      // i18n: pick locale
+      {
+        const cfgLocale = currentConfig.locale ?? 'auto';
+        const resolvedLocale = cfgLocale === 'auto'
+          ? (navigator.language?.split('-')[0] ?? 'en')
+          : cfgLocale;
+        setLocale(resolvedLocale);
+        // RTL direction
+        const dirLang = currentConfig.respond_in === 'auto'
+          ? (currentConfig.user_address_language ?? resolvedLocale)
+          : (currentConfig.respond_in ?? resolvedLocale);
+        setDirection(dirLang);
+      }
+      // Display preferences
+      applyDisplayPrefs(currentConfig);
+      // AI Act first-run disclosure
+      if (!currentConfig.transparency_acknowledged) {
+        transparencyModal.show(currentConfig.provider, async () => {
+          const acked: AppConfig = { ...currentConfig!, transparency_acknowledged: true };
+          await bridge.saveConfig(acked);
+          currentConfig = acked;
+        });
+      }
       break;
     case 'toast':
       toast.show(e.level, e.message);

@@ -5,6 +5,7 @@
  * ChatTranscript to that turn via `data-turn-id` linking.
  */
 import type { HistoryItem } from '../types';
+import { T } from '../i18n';
 
 export class HistoryPanel {
   private el: HTMLElement;
@@ -17,7 +18,7 @@ export class HistoryPanel {
 
     this.el.innerHTML = `
       <div class="va-history-header">
-        <span class="va-history-title">History</span>
+        <span class="va-history-title">${T('history.title')}</span>
       </div>
       <div class="va-history-list"></div>
     `;
@@ -31,7 +32,7 @@ export class HistoryPanel {
     if (items.length === 0) {
       const empty = document.createElement('p');
       empty.className = 'va-history-empty';
-      empty.textContent = 'No history yet.';
+      empty.textContent = T('history.empty');
       this.listEl.appendChild(empty);
       return;
     }
@@ -115,7 +116,7 @@ export class HistoryPanel {
         padding: 7px 14px;
         font-size: 0.75rem;
         line-height: 1.4;
-        text-align: left;
+        text-align: start;
         color: rgba(200,205,220,0.7);
         background: transparent;
         border: none;

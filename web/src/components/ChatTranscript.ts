@@ -14,6 +14,7 @@
  *   Tool calls → small italic line below assistant bubble
  */
 import type { HistoryItem } from '../types';
+import { T } from '../i18n';
 
 export type TranscriptLine = {
   speaker: 'user' | 'assistant';
@@ -30,7 +31,7 @@ export class ChatTranscript {
   constructor(parent: HTMLElement) {
     this.el = document.createElement('section');
     this.el.className = 'va-transcript flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3';
-    this.el.innerHTML = `<p class="text-dim text-sm text-center mt-8 select-none">Press the hotkey or type a command to start.</p>`;
+    this.el.innerHTML = `<p class="text-dim text-sm text-center mt-8 select-none">${T('transcript.prompt')}</p>`;
     parent.appendChild(this.el);
     this._injectStyles();
   }
@@ -143,8 +144,12 @@ export class ChatTranscript {
       }
       .va-bubble-row.is-visible { opacity: 1; transform: translateY(0); }
 
+      /* RTL-aware alignment using logical values */
       .va-bubble-row--user    { justify-content: flex-end; }
       .va-bubble-row--assistant { justify-content: flex-start; }
+      /* In RTL: user bubble aligns inline-end (right in LTR, left in RTL) */
+      [dir="rtl"] .va-bubble-row--user    { justify-content: flex-start; }
+      [dir="rtl"] .va-bubble-row--assistant { justify-content: flex-end; }
 
       .va-bubble {
         max-width: 70%;
@@ -161,14 +166,14 @@ export class ChatTranscript {
         background: rgba(149, 128, 255, 0.18);
         border: 1px solid rgba(149, 128, 255, 0.28);
         color: #e8e6ff;
-        border-bottom-right-radius: 4px;
+        border-end-end-radius: 4px;   /* bottom-right in LTR, bottom-left in RTL */
       }
       .va-bubble--assistant {
         background: rgba(30, 34, 46, 0.7);
         border: 1px solid rgba(255,255,255,0.07);
         backdrop-filter: blur(8px);
         color: #d8dce8;
-        border-bottom-left-radius: 4px;
+        border-end-start-radius: 4px; /* bottom-left in LTR, bottom-right in RTL */
       }
       .va-cursor {
         display: inline-block;

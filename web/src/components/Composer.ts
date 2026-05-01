@@ -11,6 +11,8 @@
  *   - Mic button: idle (mic icon) | listening (pulsing red dot)
  *   - Send button (paper-airplane) visible when textarea has text
  */
+import { T } from '../i18n';
+
 export class Composer {
   private el: HTMLElement;
   private input: HTMLTextAreaElement;
@@ -24,7 +26,7 @@ export class Composer {
     this.el.className = 'va-composer';
     this.el.innerHTML = `
       <div class="va-composer-inner glass">
-        <button data-record type="button" aria-label="Start listening" class="va-mic-btn" title="Start recording">
+        <button data-record type="button" aria-label="${T('composer.start_listening')}" class="va-mic-btn" title="${T('composer.start_listening')}">
           <span data-mic-icon class="va-mic-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <rect x="9" y="2" width="6" height="12" rx="3"/>
@@ -34,9 +36,9 @@ export class Composer {
           </span>
           <span data-listen-dot class="va-listen-dot hidden" aria-hidden="true"></span>
         </button>
-        <textarea data-input rows="1" placeholder="Type a command…"
-          class="va-composer-input" aria-label="Message"></textarea>
-        <button data-send type="button" aria-label="Send message" class="va-send-btn hidden" title="Send">
+        <textarea data-input rows="1" placeholder="${T('composer.placeholder')}"
+          class="va-composer-input" aria-label="${T('composer.placeholder')}"></textarea>
+        <button data-send type="button" aria-label="${T('composer.send')}" class="va-send-btn hidden" title="${T('composer.send')}">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <line x1="22" y1="2" x2="11" y2="13"/>
             <polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -62,7 +64,7 @@ export class Composer {
     const dot     = this.el.querySelector<HTMLElement>('[data-listen-dot]')!;
     micIcon.classList.toggle('hidden', active);
     dot.classList.toggle('hidden', !active);
-    this.micBtn.setAttribute('aria-label', active ? 'Recording…' : 'Start listening');
+    this.micBtn.setAttribute('aria-label', active ? T('composer.recording') : T('composer.start_listening'));
   }
 
   // ------------------------------------------------------------------

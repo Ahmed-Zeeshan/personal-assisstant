@@ -114,19 +114,18 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
     from voice_assistant.desktop.window import DesktopApp
     from voice_assistant.history import History
     from voice_assistant.stt import Transcriber
-    from voice_assistant.tts import Speaker
+    from voice_assistant.tts import make_speaker
+    from voice_assistant.tts.streaming import SentenceQueueSpeaker
 
     bus = EventBus()
     home = Path.home() / ".voice-assistant"
     history = History(home / "history.jsonl")
 
     transcriber = None
-    speaker = None
     listener = None
     if cfg.audio.trigger == "hotkey":
         try:
             transcriber = Transcriber(model_name=cfg.stt.model, language=cfg.stt.language)
-            speaker     = Speaker(voice=cfg.tts.voice)
             listener    = HotkeyListener(cfg.audio.hotkey)
         except Exception as exc:
             log.warning("audio init failed (%s); voice mode disabled", exc)
@@ -160,32 +159,41 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
         bus.publish({"type": "transcript", "speaker": "user", "text": text})
         bus.publish({"type": "status", "value": "thinking"})
         buf = ""
+        # Build a fresh per-request streaming speaker (isolated queue + thread).
+        speaker_for_request: SentenceQueueSpeaker | None = None
+        if cfg.audio.trigger == "hotkey" and transcriber is not None:
+            try:
+                speaker_for_request = SentenceQueueSpeaker(make_speaker(voice_id=cfg.tts.voice))
+            except Exception as exc:
+                log.warning("failed to create speaker for request: %s", exc)
         try:
             bus.publish({"type": "transcript_start", "speaker": "assistant"})
             for ev in active_orch[0].handle_stream(text):
                 if ev["type"] == "assistant_delta":
                     buf += ev["text"]
                     bus.publish({"type": "transcript_chunk", "text": ev["text"]})
+                    if speaker_for_request is not None:
+                        bus.publish({"type": "status", "value": "speaking"})
+                        speaker_for_request.feed(ev["text"])
                 elif ev["type"] == "tool_invoked":
                     bus.publish({"type": "tool_invoked", "name": ev["name"]})
                 elif ev["type"] == "tool_result":
                     pass  # not surfaced to UI by default
                 elif ev["type"] == "done":
+                    if speaker_for_request is not None:
+                        speaker_for_request.flush()
+                        speaker_for_request.wait()
                     if buf:
                         history.append("assistant", buf)
                     bus.publish({"type": "transcript_end"})
         except Exception as exc:
             log.exception("orch.handle_stream failed")
+            if speaker_for_request is not None:
+                speaker_for_request.flush()
             bus.publish({"type": "transcript_end"})
             bus.publish({"type": "toast", "level": "error", "message": str(exc)})
             bus.publish({"type": "status", "value": "error"})
         finally:
-            if speaker is not None and buf:
-                bus.publish({"type": "status", "value": "speaking"})
-                try:
-                    speaker.speak(buf)
-                except Exception:
-                    log.exception("speaker.speak failed")
             bus.publish({"type": "status", "value": "idle"})
 
     def _record_and_run() -> None:
@@ -268,7 +276,7 @@ def _run_text_mode(orch: Orchestrator) -> None:
 def _run_voice_mode(orch: Orchestrator, cfg: Config) -> None:
     from voice_assistant.audio_input import HotkeyListener, record_until_silence
     from voice_assistant.stt import Transcriber
-    from voice_assistant.tts import Speaker
+    from voice_assistant.tts import make_speaker
 
     if cfg.audio.trigger != "hotkey":
         raise SystemExit(
@@ -277,7 +285,7 @@ def _run_voice_mode(orch: Orchestrator, cfg: Config) -> None:
         )
     listener = HotkeyListener(cfg.audio.hotkey)
     transcriber = Transcriber(model_name=cfg.stt.model, language=cfg.stt.language)
-    speaker = Speaker(voice=cfg.tts.voice)
+    speaker = make_speaker(voice_id=cfg.tts.voice)
 
     print(f"voice-assistant ready. Press {cfg.audio.hotkey} to talk.")
     while True:

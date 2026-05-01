@@ -14,12 +14,14 @@ import sounddevice as sd
 from piper.download_voices import download_voice
 from piper.voice import PiperVoice
 
+from voice_assistant.tts.base import Speaker
+
 log = logging.getLogger(__name__)
 
 _CACHE_DIR = Path.home() / ".cache" / "piper"
 
 
-class Speaker:
+class PiperSpeaker(Speaker):
     def __init__(self, voice: str) -> None:
         self._voice_name = voice
         model_path = _ensure_model(voice)

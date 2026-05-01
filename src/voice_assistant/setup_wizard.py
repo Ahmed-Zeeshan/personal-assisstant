@@ -25,6 +25,10 @@ class WizardAnswers:
     voice: str = "piper:en_US-amy-medium"
     stt_language: str = "auto"
     avatar: str = "aria"
+    respond_in: str = "auto"   # "auto" or ISO language code e.g. "ur", "hi"
+    audio_trigger: str = "hotkey"
+    wake_word: str = "hey_jarvis"
+    wake_sensitivity: float = 0.5
 
 
 def render_config(a: WizardAnswers) -> str:
@@ -48,9 +52,11 @@ def render_config(a: WizardAnswers) -> str:
         f"  voice: {a.voice}\n"
         "\n"
         "audio:\n"
-        "  trigger: hotkey\n"
+        f"  trigger: {a.audio_trigger}\n"
         f"  hotkey: {a.hotkey}\n"
         "  silence_seconds: 1.5\n"
+        f"  wake_word: {a.wake_word}\n"
+        f"  wake_sensitivity: {a.wake_sensitivity}\n"
         "\n"
         "safety:\n"
         "  allowed_roots:\n"
@@ -68,10 +74,13 @@ def render_config(a: WizardAnswers) -> str:
         f"avatar: {a.avatar}\n"
     )
     user_block = ""
-    if a.user_name or a.user_address_as != "none":
+    has_user = a.user_name or a.user_address_as != "none" or a.respond_in != "auto"
+    if has_user:
         d: dict[str, Any] = {"user": {"name": a.user_name, "address_as": a.user_address_as}}
         if a.user_title:
             d["user"]["title"] = a.user_title
+        if a.respond_in != "auto":
+            d["user"]["respond_in"] = a.respond_in
         user_block = "\n" + yaml.safe_dump(d, sort_keys=False, default_flow_style=False)
     return base + user_block
 

@@ -94,6 +94,47 @@ def test_bridge_save_config_emits_config_event(bridge_with_config):
     assert seen[0]["cfg"]["provider"] == "anthropic"
 
 
+def test_bridge_save_config_persists_voice_avatar_stt(bridge_with_config):
+    """voice/avatar/stt_language must round-trip through save_config → get_config."""
+    bridge, _, _, _cfg_path, _ = bridge_with_config
+    bridge.save_config({
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-6",
+        "hotkey": "ctrl+shift+space",
+        "allowed_roots": ["~"],
+        "ollama_base_url": None,
+        "_secret": "sk-ant-test",
+        "voice": "openai:nova",
+        "stt_language": "ur",
+        "avatar": "liam",
+        "respond_in": "ur",
+    })
+    result = bridge.get_config()
+    assert result["voice"] == "openai:nova"
+    assert result["stt_language"] == "ur"
+    assert result["avatar"] == "liam"
+    assert result["respond_in"] == "ur"
+
+
+def test_bridge_save_config_persists_wake_word_fields(bridge_with_config):
+    bridge, _, _, _cfg_path, _ = bridge_with_config
+    bridge.save_config({
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-6",
+        "hotkey": "ctrl+shift+space",
+        "allowed_roots": ["~"],
+        "ollama_base_url": None,
+        "_secret": "sk-ant-test",
+        "audio_trigger": "wake_word",
+        "wake_word": "alexa",
+        "wake_sensitivity": 0.8,
+    })
+    result = bridge.get_config()
+    assert result["audio_trigger"] == "wake_word"
+    assert result["wake_word"] == "alexa"
+    assert abs(result["wake_sensitivity"] - 0.8) < 1e-6
+
+
 def test_bridge_env_file_is_mode_0600(bridge_with_config):
     if os.name == "nt":
         pytest.skip("file modes are POSIX-only")

@@ -1,9 +1,9 @@
 export type AvatarState = 'idle'|'listening'|'thinking'|'speaking'|'error';
 
 const AVATAR_SRC: Record<string, string> = {
-  aria: '/avatars/aria.svg',
-  liam: '/avatars/liam.svg',
-  sage: '/avatars/sage.svg',
+  aria: 'avatars/aria.svg',
+  liam: 'avatars/liam.svg',
+  sage: 'avatars/sage.svg',
 };
 
 export class Avatar {

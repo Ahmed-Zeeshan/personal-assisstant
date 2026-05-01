@@ -16,6 +16,7 @@ class UserConfig(BaseModel):
     name: str | None = None
     address_as: Literal["first_name", "full_name", "title", "none"] = "none"
     title: str | None = None
+    respond_in: str = "auto"   # "auto" or ISO language code e.g. "ur", "hi", "cs"
 
 
 class STTConfig(BaseModel):
@@ -38,9 +39,11 @@ class TTSConfig(BaseModel):
 
 
 class AudioConfig(BaseModel):
-    trigger: Literal["hotkey", "wake_word"]
-    hotkey: str
-    silence_seconds: float = Field(gt=0)
+    trigger: Literal["hotkey", "wake_word"] = "hotkey"
+    hotkey: str = "ctrl+shift+space"
+    silence_seconds: float = Field(default=1.5, gt=0)
+    wake_word: str = "hey_jarvis"
+    wake_sensitivity: float = 0.5
 
 
 class SafetyConfig(BaseModel):

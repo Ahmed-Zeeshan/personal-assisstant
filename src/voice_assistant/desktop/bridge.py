@@ -42,9 +42,13 @@ def _config_to_dict(path: Path) -> dict[str, Any] | None:
         "user_name":       cfg.user.name,
         "user_address_as": cfg.user.address_as,
         "user_title":      cfg.user.title,
+        "respond_in":      cfg.user.respond_in,
         "voice":           cfg.tts.voice,
         "stt_language":    cfg.stt.language,
         "avatar":          getattr(cfg, "avatar", "aria"),
+        "audio_trigger":   cfg.audio.trigger,
+        "wake_word":       cfg.audio.wake_word,
+        "wake_sensitivity": cfg.audio.wake_sensitivity,
     }
 
 
@@ -58,9 +62,13 @@ def _default_config_dict() -> dict[str, Any]:
         "user_name":       None,
         "user_address_as": "none",
         "user_title":      None,
+        "respond_in":      "auto",
         "voice":           "piper:en_US-amy-medium",
         "stt_language":    "auto",
         "avatar":          "aria",
+        "audio_trigger":   "hotkey",
+        "wake_word":       "hey_jarvis",
+        "wake_sensitivity": 0.5,
     }
 
 
@@ -141,9 +149,13 @@ class Bridge:
                 user_name=cfg.get("user_name") or None,
                 user_address_as=cfg.get("user_address_as") or "none",
                 user_title=cfg.get("user_title") or None,
+                respond_in=cfg.get("respond_in") or "auto",
                 voice=cfg.get("voice") or "piper:en_US-amy-medium",
                 stt_language=cfg.get("stt_language") or "auto",
                 avatar=cfg.get("avatar") or "aria",
+                audio_trigger=cfg.get("audio_trigger") or "hotkey",
+                wake_word=cfg.get("wake_word") or "hey_jarvis",
+                wake_sensitivity=float(cfg.get("wake_sensitivity") or 0.5),
             )
             yaml_text = render_config(answers)
             Config.model_validate(yaml.safe_load(yaml_text))  # validation

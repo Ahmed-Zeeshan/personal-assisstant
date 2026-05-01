@@ -176,3 +176,22 @@ def test_system_prompt_none():
 def test_system_prompt_includes_language_rule():
     p = _build_system_prompt(UserConfig(name="Zeeshan", address_as="first_name"))
     assert "language" in p.lower()
+
+
+def test_system_prompt_auto_detect_strong_wording():
+    p = _build_system_prompt(UserConfig())
+    assert "Detect the language" in p
+    assert "Do not default to English" in p
+
+
+def test_system_prompt_force_language_override():
+    p = _build_system_prompt(UserConfig(respond_in="ur"))
+    assert "ur" in p
+    assert "Translate" in p
+    # Should NOT include the auto-detect paragraph
+    assert "Do not default to English" not in p
+
+
+def test_system_prompt_respond_in_auto_uses_detect():
+    p = _build_system_prompt(UserConfig(respond_in="auto"))
+    assert "Detect the language" in p

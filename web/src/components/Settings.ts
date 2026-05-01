@@ -167,7 +167,7 @@ export class Settings {
       btn.dataset.avatar = name;
       btn.setAttribute('aria-pressed', String(name === (this.currentCfg?.avatar ?? 'aria')));
       if (name === (this.currentCfg?.avatar ?? 'aria')) btn.classList.add('border-accent');
-      btn.innerHTML = `<img src="/avatars/${name}.svg" alt="${name}" class="h-16 w-16 mx-auto rounded-full" />
+      btn.innerHTML = `<img src="avatars/${name}.svg" alt="${name}" class="h-16 w-16 mx-auto rounded-full" />
         <p class="mt-1 text-xs capitalize text-center">${name}</p>`;
       btn.addEventListener('click', () => {
         grid.querySelectorAll('button').forEach(b => {

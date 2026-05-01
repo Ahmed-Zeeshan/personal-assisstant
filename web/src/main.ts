@@ -1,6 +1,6 @@
 import './style.css';
 import { Header } from './components/Header';
-import { Orb }    from './components/Orb';
+import { Avatar } from './components/Avatar';
 import { Transcript } from './components/Transcript';
 import { Composer } from './components/Composer';
 import { Settings } from './components/Settings';
@@ -14,13 +14,13 @@ root.className = 'h-screen flex flex-col';
 root.innerHTML = '';
 
 const header     = new Header(root);
-const orb        = new Orb(root);
+const avatar     = new Avatar(root, 'aria');
 const transcript = new Transcript(root);
 const composer   = new Composer(root);
 const settings   = new Settings(document.body);
 const toast      = new Toast(document.body);
 
-// Constrain transcript so the orb keeps the visual lead
+// Constrain transcript so the avatar keeps the visual lead
 const transcriptEl = root.children[2] as HTMLElement;
 transcriptEl.classList.remove('flex-1');
 transcriptEl.classList.add('max-h-48', 'shrink-0');
@@ -31,7 +31,7 @@ bus.on((e) => {
   switch (e.type) {
     case 'status':
       header.setStatus(e.value);
-      orb.setState(e.value);
+      avatar.setState(e.value);
       break;
     case 'transcript':
       transcript.push({ speaker: e.speaker, text: e.text, tool_call: e.tool_call });
@@ -41,18 +41,19 @@ bus.on((e) => {
       break;
     case 'transcript_chunk':
       transcript.appendAssistant(e.text);
-      // First chunk: flip orb to speaking-ish state
+      // First chunk: flip avatar to speaking-ish state
       if (header) header.setStatus('speaking');
-      orb.setState('speaking');
+      avatar.setState('speaking');
       break;
     case 'transcript_end':
       transcript.endAssistant();
       break;
     case 'audio_level':
-      orb.setRms(e.rms);
+      avatar.setRms(e.rms);
       break;
     case 'config':
       currentConfig = e.cfg;
+      avatar.setAvatar(currentConfig.avatar ?? 'aria');
       break;
     case 'toast':
       toast.show(e.level, e.message);

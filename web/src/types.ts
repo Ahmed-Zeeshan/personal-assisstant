@@ -11,6 +11,12 @@ export interface AppConfig {
   user_name: string | null;
   user_address_as: 'first_name' | 'full_name' | 'title' | 'none';
   user_title: string | null;
+  voice: string;
+  stt_language: string;
+  avatar: string;
+  available_voices?: { id: string; label: string; language: string; gender: string; engine: string; notes: string }[];
+  available_stt_languages?: { code: string; label: string }[];
+  available_avatars?: string[];
 }
 
 export type HistoryItem = { speaker: 'user' | 'assistant'; text: string; ts?: string };

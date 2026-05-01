@@ -213,11 +213,20 @@ export class Settings {
     const user_name     = (this.el.querySelector('[data-field="user_name"]') as HTMLInputElement).value.trim() || null;
     const user_address_as = (this.el.querySelector('[data-field="user_address_as"]') as HTMLSelectElement).value as AppConfig['user_address_as'];
     const user_title    = (this.el.querySelector('[data-field="user_title"]') as HTMLInputElement).value.trim() || null;
+
+    const voiceEl    = this.el.querySelector<HTMLSelectElement>('[data-field="voice"]');
+    const sttLangEl  = this.el.querySelector<HTMLSelectElement>('[data-field="stt_language"]');
+    const avatarBtn  = this.el.querySelector<HTMLElement>('[data-field="avatar"] [aria-pressed="true"]');
+    const voice       = voiceEl?.value || this.currentCfg?.voice || 'piper:en_US-amy-medium';
+    const stt_language = sttLangEl?.value || this.currentCfg?.stt_language || 'auto';
+    const avatar      = (avatarBtn as HTMLElement & { dataset: DOMStringMap })?.dataset.avatar ?? this.currentCfg?.avatar ?? 'aria';
+
     const cfg: AppConfig & { _secret?: string } = {
       provider, model, hotkey,
       allowed_roots: roots,
       ollama_base_url: provider === 'ollama' ? (secret || this.currentCfg?.ollama_base_url || 'http://localhost:11434') : null,
       user_name, user_address_as, user_title,
+      voice, stt_language, avatar,
     };
     if (provider !== 'ollama' && secret) cfg._secret = secret;
     return cfg;

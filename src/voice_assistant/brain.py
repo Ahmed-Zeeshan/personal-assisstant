@@ -11,6 +11,7 @@ from litellm import completion
 
 from voice_assistant.retry import with_llm_retry
 from voice_assistant.tools.schema import ToolSpec
+from voice_assistant.tools.system_info import system_context_block
 
 if TYPE_CHECKING:
     from voice_assistant.config import UserConfig
@@ -88,8 +89,10 @@ def _build_system_prompt(user: UserConfig | None) -> str:
             "Switch languages immediately when the user does.\n"
         )
 
+    context = system_context_block()
     return (
         "You are voice-assistant — a personal desktop helper that talks to the user by voice.\n"
+        f"Machine context: {context}\n"
         f"{address_line}"
         "Keep responses short and direct: 1-2 short sentences when speaking, since they will be read aloud.\n"
         f"{language_line}"

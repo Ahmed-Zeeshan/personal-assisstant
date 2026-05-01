@@ -10,6 +10,7 @@ from voice_assistant.safety import SafetyPolicy
 from voice_assistant.tools import filesystem as fs
 from voice_assistant.tools import gmail, system
 from voice_assistant.tools.schema import ToolResult, ToolSpec
+from voice_assistant.tools.system_info import SYSTEM_INFO_SCHEMA, get_system_info
 
 
 def _bind_filesystem_tool(
@@ -159,6 +160,20 @@ def build_registry(
                 "additionalProperties": False,
             },
             func=system.open_app,
+        ),
+        ToolSpec(
+            name="get_system_info",
+            description=cast(dict[str, Any], SYSTEM_INFO_SCHEMA.get("function", {})).get(
+                "description", ""
+            ),
+            parameters=cast(dict[str, Any], SYSTEM_INFO_SCHEMA.get("function", {})).get(
+                "parameters", {}
+            ),
+            func=lambda **_kw: ToolResult(
+                ok=True,
+                summary="system info",
+                data=get_system_info(),
+            ),
         ),
     ]
 

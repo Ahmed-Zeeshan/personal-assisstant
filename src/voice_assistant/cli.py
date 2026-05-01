@@ -202,6 +202,11 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
 
     def _do_request(text: str, images: list[str] | None = None) -> None:
         history.append("user", text)
+        # Load recent turns BEFORE the current user message (it was just appended above).
+        recent = history.load_recent(20)
+        # Drop the last entry if it matches the message we just appended.
+        if recent and recent[-1].get("text") == text and recent[-1].get("speaker") == "user":
+            recent = recent[:-1]
         bus.publish({"type": "transcript", "speaker": "user", "text": text})
         bus.publish({"type": "status", "value": "thinking"})
         buf = ""
@@ -216,7 +221,7 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
                 log.warning("failed to create speaker for request: %s", exc)
         try:
             bus.publish({"type": "transcript_start", "speaker": "assistant"})
-            for ev in active_orch[0].handle_stream(text, images=images or []):
+            for ev in active_orch[0].handle_stream(text, images=images or [], history=recent):
                 if ev["type"] == "assistant_delta":
                     buf += ev["text"]
                     bus.publish({"type": "transcript_chunk", "text": ev["text"]})

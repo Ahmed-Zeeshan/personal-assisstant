@@ -108,7 +108,19 @@ class Orchestrator:
             blocks.append({"type": "image_url", "image_url": {"url": url}})
         return blocks
 
-    def handle_stream(self, text: str, images: list[str] | None = None) -> Iterator[dict[str, Any]]:
+    def _tool_by_name_from_list(self, name: str) -> ToolSpec | None:
+        """Look up a tool spec from the tools list by name."""
+        for t in self.tools:
+            if t.name == name:
+                return t
+        return None
+
+    def handle_stream(
+        self,
+        text: str,
+        images: list[str] | None = None,
+        history: list[dict[str, Any]] | None = None,
+    ) -> Iterator[dict[str, Any]]:
         """Yield orchestrator events as the brain streams.
 
         Events: dict with "type" in:
@@ -121,17 +133,58 @@ class Orchestrator:
         sent as a multi-modal content block following OpenAI/Anthropic format.
         LiteLLM forwards these to vision-capable models; models that don't
         support image_url receive only the text block.
+
+        When *history* is supplied (list of {"speaker": str, "text": str} dicts),
+        prior turns are prepended to the messages so the LLM has conversation context.
+        History is capped at ~4 000 chars (~1 000 tokens) to avoid context overflow.
         """
         imgs = images or []
         if imgs:
             log.debug("handle_stream: %d image(s) attached", len(imgs))
         tool_schemas = [t.to_openai_format() for t in self.tools]
         user_content = self._build_user_content(text, imgs)
-        messages: list[dict[str, Any]] = [{"role": "user", "content": user_content}]
+
+        # --- Build initial messages list with history context ---
+        messages: list[dict[str, Any]] = []
+        if history:
+            budget = 4000  # ~1 000 tokens; safe under any current model's window
+            used = 0
+            kept: list[dict[str, Any]] = []
+            for h in reversed(history):
+                entry_size = len(h.get("text") or "")
+                if used + entry_size > budget:
+                    break
+                used += entry_size
+                kept.append(h)
+            for h in reversed(kept):
+                role = "user" if h["speaker"] == "user" else "assistant"
+                messages.append({"role": role, "content": h["text"]})
+
+        messages.append({"role": "user", "content": user_content})
+
+        # --- Auto-recall: prepend relevant memory facts to system prompt ---
+        extra_ctx: str | None = None
+        recall_spec = self._tool_by_name_from_list("recall")
+        if recall_spec is not None:
+            try:
+                result = recall_spec.func(query=text, k=3)
+                facts_data = result.data if result.data is not None else {}
+                facts = facts_data.get("results", []) if isinstance(facts_data, dict) else []
+                if facts:
+                    lines = "\n".join(f"  - {f.get('text', '')}" for f in facts)
+                    extra_ctx = (
+                        "Known facts about the user (auto-recalled — verify before using):\n"
+                        + lines
+                    )
+            except Exception as exc:
+                log.debug("auto-recall failed: %s", exc)
+
         for _ in range(5):  # bounded tool-call iterations
             text_buf = ""
             tool_call: ToolCallReady | None = None
-            for item in self.brain.complete_stream(messages, tool_schemas):
+            for item in self.brain.complete_stream(
+                messages, tool_schemas, extra_system_context=extra_ctx
+            ):
                 if isinstance(item, ContentChunk):
                     text_buf += item.text
                     yield {"type": "assistant_delta", "text": item.text}

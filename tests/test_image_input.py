@@ -72,7 +72,7 @@ class TestHandleStreamImageShape:
     def test_with_image_sends_block_list(self):
         orch = _make_orch()
         # Reset the mock so complete_stream returns a fresh iterator each call
-        orch.brain.complete_stream.side_effect = lambda msgs, tools: iter(
+        orch.brain.complete_stream.side_effect = lambda msgs, tools, **_kw: iter(
             [ContentChunk(text="described")]
         )
         list(orch.handle_stream("describe this", images=[_FAKE_DATA_URL]))
@@ -87,7 +87,7 @@ class TestHandleStreamImageShape:
 
     def test_stream_events_still_emitted_with_images(self):
         orch = _make_orch()
-        orch.brain.complete_stream.side_effect = lambda msgs, tools: iter(
+        orch.brain.complete_stream.side_effect = lambda msgs, tools, **_kw: iter(
             [ContentChunk(text="sure")]
         )
         events = list(orch.handle_stream("look", images=[_FAKE_DATA_URL]))

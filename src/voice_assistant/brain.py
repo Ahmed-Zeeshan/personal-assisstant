@@ -204,15 +204,22 @@ class Brain:
         self,
         messages: list[dict[str, Any]],
         tools: list[Any],
+        extra_system_context: str | None = None,
     ) -> Iterator[ContentChunk | ToolCallReady]:
         """Stream a completion. Yields ContentChunk for text and ToolCallReady when a tool call completes.
 
         Tool-call argument JSON is accumulated across chunks (LiteLLM exposes deltas).
+
+        When *extra_system_context* is provided, it is appended to the system prompt
+        (e.g. auto-recalled memory facts).
         """
         full_messages = list(messages)
         if not full_messages or full_messages[0].get("role") != "system":
+            sys_text = self._get_system_prompt()
+            if extra_system_context:
+                sys_text = sys_text + "\n\n" + extra_system_context
             full_messages = [
-                {"role": "system", "content": self._get_system_prompt()},
+                {"role": "system", "content": sys_text},
                 *full_messages,
             ]
 

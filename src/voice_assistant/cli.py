@@ -149,6 +149,20 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
         except Exception as exc:
             log.warning("STT init failed (%s); voice mode disabled", exc)
 
+    # Pre-warm the Whisper model in the background so the first hotkey press is fast.
+    def _prewarm_transcriber() -> None:
+        if transcriber is not None:
+            try:
+                import numpy as np
+
+                silence = np.zeros(16000, dtype=np.float32).tobytes()
+                transcriber.transcribe(silence)
+                log.info("STT pre-warmed")
+            except Exception as exc:
+                log.debug("STT pre-warm failed (non-fatal): %s", exc)
+
+    threading.Thread(target=_prewarm_transcriber, daemon=True).start()
+
     # Holder for the active orchestrator. Settings save can swap this out so
     # provider/model/key changes take effect without a restart.
     active_orch: list[Orchestrator] = [orch]  # mutable single-item list for closure capture

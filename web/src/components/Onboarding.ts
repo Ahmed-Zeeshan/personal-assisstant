@@ -104,7 +104,7 @@ export class Onboarding {
   private _renderSlides(): void {
     const container = this.el.querySelector('[data-slides]')!;
     container.innerHTML = SLIDES.map((slide, i) => `
-      <div class="va-onboarding-slide${i === 0 ? ' is-active' : ''}" data-slide="${i}" aria-hidden="${i !== 0}">
+      <div class="va-onboarding-slide${i === 0 ? ' is-active' : ''}" data-slide="${i}" aria-hidden="${i !== 0}"${i === 0 ? '' : ' hidden'}>
         <div class="va-onboarding-icon">${slide.icon}</div>
         <h2 class="va-onboarding-title">${T(slide.titleKey)}</h2>
         <p class="va-onboarding-body">${T(slide.bodyKey)}</p>
@@ -161,16 +161,18 @@ export class Onboarding {
     const total = SLIDES.length;
     const cur = this.currentSlide;
 
-    // Slides
-    this.el.querySelectorAll<HTMLElement>('[data-slide]').forEach(s => {
+    // Slides — use the hidden attribute as the authoritative show/hide so the
+    // active slide is always the only one visible (regardless of CSS state).
+    this.el.querySelectorAll<HTMLElement>('[data-slide]').forEach((s) => {
       const idx = parseInt(s.dataset.slide ?? '0', 10);
       const active = idx === cur;
       s.classList.toggle('is-active', active);
       s.setAttribute('aria-hidden', String(!active));
+      s.toggleAttribute('hidden', !active);
     });
 
     // Dots
-    this.el.querySelectorAll<HTMLElement>('[data-dot]').forEach(d => {
+    this.el.querySelectorAll<HTMLElement>('[data-dot]').forEach((d) => {
       d.classList.toggle('is-active', parseInt(d.dataset.dot ?? '0', 10) === cur);
     });
 
@@ -179,6 +181,7 @@ export class Onboarding {
     const nextBtn = this.el.querySelector<HTMLButtonElement>('[data-next]')!;
     prevBtn.disabled = cur === 0;
     nextBtn.textContent = cur === total - 1 ? T('onboarding.get_started') : T('onboarding.next');
+    nextBtn.dataset.last = cur === total - 1 ? '1' : '0';
   }
 
   private _finish(): void {
@@ -246,28 +249,23 @@ export class Onboarding {
         background: rgba(149,128,255,0.12);
       }
       .va-onboarding-slides {
-        position: relative;
         flex: 1;
         overflow: hidden;
         min-height: 320px;
+        display: flex;
       }
       .va-onboarding-slide {
-        position: absolute;
-        inset: 0;
         padding: 48px 40px 32px;
         display: flex;
         flex-direction: column;
         align-items: center;
         text-align: center;
-        opacity: 0;
-        transform: translateX(40px);
-        transition: opacity 280ms ease, transform 280ms ease;
-        pointer-events: none;
+        animation: va-slide-in 220ms ease both;
       }
-      .va-onboarding-slide.is-active {
-        opacity: 1;
-        transform: translateX(0);
-        pointer-events: auto;
+      .va-onboarding-slide[hidden] { display: none; }
+      @keyframes va-slide-in {
+        from { opacity: 0; transform: translateX(20px); }
+        to   { opacity: 1; transform: translateX(0); }
       }
       .va-onboarding-icon {
         color: #9580ff;

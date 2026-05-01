@@ -49,6 +49,7 @@ def _config_to_dict(path: Path) -> dict[str, Any] | None:
         "audio_trigger": cfg.audio.trigger,
         "wake_word": cfg.audio.wake_word,
         "wake_sensitivity": cfg.audio.wake_sensitivity,
+        "onboarding_seen": cfg.onboarding_seen,
     }
 
 
@@ -94,7 +95,7 @@ class Bridge:
         config_path: Path,
         env_path: Path,
         bus: EventBus,
-        on_send_text: Callable[[str], None],
+        on_send_text: Callable[[str, list[str]], None],
         on_listening_start: Callable[[], None],
         on_listening_stop: Callable[[], None],
         on_config_reload: Callable[[], None] | None = None,
@@ -116,8 +117,8 @@ class Bridge:
     def stop_listening(self) -> None:
         self._on_listening_stop()
 
-    def send_text(self, text: str) -> None:
-        self._on_send_text(text)
+    def send_text(self, text: str, images: list[str] | None = None) -> None:
+        self._on_send_text(text, images or [])
 
     def get_config(self) -> dict[str, Any]:
         cfg = _config_to_dict(self._config_path) or _default_config_dict()

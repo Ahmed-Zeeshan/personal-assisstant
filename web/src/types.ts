@@ -30,6 +30,8 @@ export interface AppConfig {
   transparency_acknowledged?: boolean;
   /** Used for direction detection when respond_in is "auto" */
   user_address_language?: string;
+  /** First-run onboarding tour */
+  onboarding_seen?: boolean;
 }
 
 export type HistoryItem = { speaker: 'user' | 'assistant'; text: string; ts?: string };

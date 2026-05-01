@@ -71,6 +71,7 @@ export class Settings {
   private saveHandler: (cfg: AppConfig) => Promise<{ok: boolean; errors?: string[]}> = async () => ({ok: true});
   private currentCfg: AppConfig | null = null;
   private activeTab: TabId = 'brain';
+  private showOnboardingHandler: (() => void) | null = null;
 
   constructor(parent: HTMLElement) {
     this.el = document.createElement('aside');
@@ -134,6 +135,10 @@ export class Settings {
 
   onSave(handler: (cfg: AppConfig) => Promise<{ok: boolean; errors?: string[]}>): void {
     this.saveHandler = handler;
+  }
+
+  onShowOnboarding(handler: () => void): void {
+    this.showOnboardingHandler = handler;
   }
 
   // ── Internal ──────────────────────────────────────────────────────────────
@@ -350,7 +355,16 @@ export class Settings {
           <option value="xl">${T('display.font_xl')}</option>
         </select>
       </div>
+      <!-- Onboarding -->
+      <div class="va-section-divider"></div>
+      <div class="va-field">
+        <button type="button" data-show-onboarding class="va-link-btn">${T('onboarding.show_again')}</button>
+      </div>
     `;
+    p.querySelector('[data-show-onboarding]')!.addEventListener('click', () => {
+      this.close();
+      if (this.showOnboardingHandler) this.showOnboardingHandler();
+    });
   }
 
   // ── Populate ──────────────────────────────────────────────────────────────

@@ -98,6 +98,7 @@ class Config(BaseModel):
     display: DisplayConfig = Field(default_factory=DisplayConfig)
     locale: str = "auto"  # "auto" or BCP-47 language code e.g. "en", "ur", "hi"
     transparency_acknowledged: bool = False  # AI Act first-run disclosure
+    onboarding_seen: bool = False  # first-run onboarding tour
 
 
 def load_config(path: Path) -> Config:

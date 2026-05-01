@@ -9,6 +9,7 @@ import { Settings } from './components/Settings';
 import { Toast } from './components/Toast';
 import { HistoryPanel } from './components/HistoryPanel';
 import { TransparencyModal } from './components/TransparencyModal';
+import { Onboarding } from './components/Onboarding';
 import { bus } from './state';
 import { bridge } from './bridge';
 import type { AppConfig } from './types';
@@ -45,6 +46,7 @@ const composer   = new Composer(main);
 const settings          = new Settings(document.body);
 const toast             = new Toast(document.body);
 const transparencyModal = new TransparencyModal(document.body);
+const onboarding        = new Onboarding(document.body);
 
 let currentConfig: AppConfig | null = null;
 
@@ -164,6 +166,14 @@ bus.on((e) => {
           currentConfig = acked;
         });
       }
+      // First-run onboarding tour
+      if (!currentConfig.onboarding_seen) {
+        onboarding.show(async () => {
+          const seen: AppConfig = { ...currentConfig!, onboarding_seen: true };
+          await bridge.saveConfig(seen);
+          currentConfig = seen;
+        });
+      }
       break;
     case 'toast':
       toast.show(e.level, e.message);
@@ -176,10 +186,19 @@ bus.on((e) => {
 });
 
 // ── Wiring ───────────────────────────────────────────────────────────────────
-composer.onSubmit((text) => { void bridge.sendText(text); });
+composer.onSubmit(({ text, images }) => { void bridge.sendText(text, images.length > 0 ? images : undefined); });
 composer.onRecord(() => { void bridge.startListening(); });
 header.onSettingsClick(() => { if (currentConfig) settings.open(currentConfig); });
 settings.onSave(async (cfg) => bridge.saveConfig(cfg as AppConfig));
+settings.onShowOnboarding(() => {
+  onboarding.show(async () => {
+    if (currentConfig) {
+      const seen: AppConfig = { ...currentConfig, onboarding_seen: true };
+      await bridge.saveConfig(seen);
+      currentConfig = seen;
+    }
+  });
+});
 
 // ── Keyboard shortcuts ───────────────────────────────────────────────────────
 document.addEventListener('keydown', (e) => {

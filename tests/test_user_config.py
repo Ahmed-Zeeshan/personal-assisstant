@@ -13,6 +13,7 @@ def _ans(**overrides):
         allowed_roots=[Path("~")],
         ollama_base_url=None,
         user_name=None, user_address_as="none", user_title=None,
+        voice="piper:en_US-amy-medium", stt_language="auto", avatar="aria",
     )
     base.update(overrides)
     return WizardAnswers(**base)
@@ -45,3 +46,10 @@ logging: { level: INFO, file: /tmp/x.log }
     cfg = Config.model_validate(yaml.safe_load(yaml_text))
     assert cfg.user.name is None
     assert cfg.user.address_as == "none"
+
+
+def test_render_config_includes_voice_and_stt_language():
+    yaml_text = render_config(_ans(voice="openai:nova", stt_language="ur"))
+    cfg = Config.model_validate(yaml.safe_load(yaml_text))
+    assert cfg.tts.voice == "openai:nova"
+    assert cfg.stt.language == "ur"

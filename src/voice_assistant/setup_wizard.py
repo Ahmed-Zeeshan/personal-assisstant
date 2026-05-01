@@ -22,6 +22,9 @@ class WizardAnswers:
     user_name: str | None = None
     user_address_as: Literal["first_name", "full_name", "title", "none"] = "none"
     user_title: str | None = None
+    voice: str = "piper:en_US-amy-medium"
+    stt_language: str = "auto"
+    avatar: str = "aria"
 
 
 def render_config(a: WizardAnswers) -> str:
@@ -38,11 +41,11 @@ def render_config(a: WizardAnswers) -> str:
         "stt:\n"
         "  engine: faster-whisper\n"
         "  model: small\n"
-        "  language: en\n"
+        f"  language: {a.stt_language}\n"
         "\n"
         "tts:\n"
         "  engine: piper\n"
-        "  voice: en_US-amy-medium\n"
+        f"  voice: {a.voice}\n"
         "\n"
         "audio:\n"
         "  trigger: hotkey\n"
@@ -61,6 +64,8 @@ def render_config(a: WizardAnswers) -> str:
         "logging:\n"
         "  level: INFO\n"
         "  file: ~/.voice-assistant/voice-assistant.log\n"
+        "\n"
+        f"avatar: {a.avatar}\n"
     )
     user_block = ""
     if a.user_name or a.user_address_as != "none":
@@ -327,6 +332,12 @@ def run_wizard(
             elif choice == "3":
                 user_address_as = "title"
                 user_title = _prompt_with_default("   Title", "Sir")
+        voice = _prompt_with_default(
+            "\n7) Voice (e.g. openai:nova for premium multilingual)", "piper:en_US-amy-medium"
+        )
+        stt_lang = _prompt_with_default(
+            "\n8) Speech recognition language (auto, en, ur, hi, …)", "auto"
+        )
     except (KeyboardInterrupt, EOFError):
         print("\nsetup cancelled, no files written")
         raise SystemExit(130) from None
@@ -340,6 +351,9 @@ def run_wizard(
         user_name=user_name,
         user_address_as=user_address_as,
         user_title=user_title,
+        voice=voice,
+        stt_language=stt_lang,
+        avatar="aria",
     )
 
     config_path.parent.mkdir(parents=True, exist_ok=True)

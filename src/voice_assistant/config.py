@@ -28,6 +28,7 @@ class STTConfig(BaseModel):
 class TTSConfig(BaseModel):
     engine: Literal["piper", "openai", "elevenlabs"] = "piper"
     voice: str = "piper:en_US-amy-medium"  # full id from the catalog
+    speed: float = 1.15  # speech rate: 0.5 (slow) … 2.0 (fast); default is natural-fast
 
     @field_validator("voice")
     @classmethod
@@ -35,6 +36,13 @@ class TTSConfig(BaseModel):
         # Allow either bare piper voice (legacy: "en_US-amy-medium") or prefixed.
         if ":" not in v:
             return f"piper:{v}"
+        return v
+
+    @field_validator("speed")
+    @classmethod
+    def _check_speed(cls, v: float) -> float:
+        if not (0.5 <= v <= 2.0):
+            raise ValueError(f"tts.speed must be between 0.5 and 2.0, got {v}")
         return v
 
 

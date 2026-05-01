@@ -145,6 +145,24 @@ def test_bridge_save_config_persists_wake_word_fields(bridge_with_config):
     assert abs(result["wake_sensitivity"] - 0.8) < 1e-6
 
 
+def test_bridge_save_config_persists_tts_speed(bridge_with_config):
+    """tts_speed must round-trip through save_config → get_config."""
+    bridge, _, _, _cfg_path, _ = bridge_with_config
+    bridge.save_config(
+        {
+            "provider": "anthropic",
+            "model": "claude-sonnet-4-6",
+            "hotkey": "ctrl+shift+space",
+            "allowed_roots": ["~"],
+            "ollama_base_url": None,
+            "_secret": "sk-ant-test",
+            "tts_speed": 1.3,
+        }
+    )
+    result = bridge.get_config()
+    assert abs(result["tts_speed"] - 1.3) < 1e-6
+
+
 def test_bridge_env_file_is_mode_0600(bridge_with_config):
     if os.name == "nt":
         pytest.skip("file modes are POSIX-only")

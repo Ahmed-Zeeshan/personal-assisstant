@@ -11,8 +11,9 @@ def test_factory_rejects_unknown_voice():
 def test_factory_returns_piper_for_known_piper_voice(monkeypatch):
     # PiperSpeaker import happens lazily; mock it before we hit the actual class.
     class FakePiper:
-        def __init__(self, voice: str) -> None:
+        def __init__(self, voice: str, speed: float = 1.15) -> None:
             self.voice = voice
+            self.speed = speed
 
         def speak(self, text: str) -> None:
             pass
@@ -35,8 +36,9 @@ def test_factory_returns_openai_for_openai_voice(monkeypatch):
 
 def test_factory_legacy_bare_voice_is_treated_as_piper(monkeypatch):
     class FakePiper:
-        def __init__(self, voice: str) -> None:
+        def __init__(self, voice: str, speed: float = 1.15) -> None:
             self.voice = voice
+            self.speed = speed
 
         def speak(self, text: str) -> None:
             pass

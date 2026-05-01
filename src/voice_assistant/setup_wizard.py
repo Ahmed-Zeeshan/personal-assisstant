@@ -23,6 +23,7 @@ class WizardAnswers:
     user_address_as: Literal["first_name", "full_name", "title", "none"] = "none"
     user_title: str | None = None
     voice: str = "piper:en_US-amy-medium"
+    tts_speed: float = 1.15
     stt_language: str = "auto"
     avatar: str = "aria"
     respond_in: str = "auto"  # "auto" or ISO language code e.g. "ur", "hi"
@@ -56,6 +57,7 @@ def render_config(a: WizardAnswers) -> str:
         "tts:\n"
         "  engine: piper\n"
         f"  voice: {a.voice}\n"
+        f"  speed: {a.tts_speed}\n"
         "\n"
         "audio:\n"
         f"  trigger: {a.audio_trigger}\n"

@@ -12,6 +12,7 @@ from pathlib import Path
 
 import numpy as np
 import sounddevice as sd
+from piper.config import SynthesisConfig
 from piper.download_voices import download_voice
 from piper.voice import PiperVoice
 
@@ -23,8 +24,10 @@ _CACHE_DIR = Path.home() / ".cache" / "piper"
 
 
 class PiperSpeaker(Speaker):
-    def __init__(self, voice: str) -> None:
+    def __init__(self, voice: str, speed: float = 1.15) -> None:
         self._voice_name = voice
+        # Piper uses length_scale (larger = slower). Invert speed to get it.
+        self._syn_config = SynthesisConfig(length_scale=1.0 / speed)
         model_path = _ensure_model(voice)
         log.debug("loading piper voice from %s", model_path)
         self._voice = PiperVoice.load(model_path)
@@ -34,7 +37,7 @@ class PiperSpeaker(Speaker):
             log.warning("synthesise_to_file called with empty text; skipping")
             return
         with wave.open(str(out_path), "wb") as wav_file:
-            self._voice.synthesize_wav(text, wav_file)
+            self._voice.synthesize_wav(text, wav_file, syn_config=self._syn_config)
 
     def speak(self, text: str) -> None:
         # NOTE: sd.play internally stops any prior playback. Concurrent calls
@@ -43,7 +46,7 @@ class PiperSpeaker(Speaker):
         if not text.strip():
             return
         chunks = []
-        for chunk in self._voice.synthesize(text):
+        for chunk in self._voice.synthesize(text, syn_config=self._syn_config):
             chunks.append(chunk.audio_int16_array)
         if not chunks:
             return

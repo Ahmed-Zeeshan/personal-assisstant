@@ -17,9 +17,10 @@ log = logging.getLogger(__name__)
 class OpenAISpeaker(Speaker):
     """OpenAI TTS. Voice id is bare (e.g. 'nova'), not prefixed."""
 
-    def __init__(self, voice: str, model: str = "gpt-4o-mini-tts") -> None:
+    def __init__(self, voice: str, model: str = "gpt-4o-mini-tts", speed: float = 1.15) -> None:
         self._voice = voice
         self._model = model
+        self._speed = speed
         if not os.environ.get("OPENAI_API_KEY"):
             raise RuntimeError(
                 "OPENAI_API_KEY not set; OpenAI TTS requires an API key. "
@@ -45,6 +46,7 @@ class OpenAISpeaker(Speaker):
             voice=self._voice,
             input=text,
             response_format="wav",
+            speed=self._speed,
         ) as response:
             buf = io.BytesIO()
             for chunk in response.iter_bytes():

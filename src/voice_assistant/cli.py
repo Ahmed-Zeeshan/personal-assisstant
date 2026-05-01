@@ -190,7 +190,9 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
         speaker_for_request: SentenceQueueSpeaker | None = None
         if transcriber is not None:
             try:
-                speaker_for_request = SentenceQueueSpeaker(make_speaker(voice_id=cfg.tts.voice))
+                speaker_for_request = SentenceQueueSpeaker(
+                    make_speaker(voice_id=cfg.tts.voice, speed=cfg.tts.speed)
+                )
             except Exception as exc:
                 log.warning("failed to create speaker for request: %s", exc)
         try:
@@ -328,7 +330,7 @@ def _run_voice_mode(orch: Orchestrator, cfg: Config) -> None:
         )
     listener = HotkeyListener(cfg.audio.hotkey)
     transcriber = Transcriber(model_name=cfg.stt.model, language=cfg.stt.language)
-    speaker = make_speaker(voice_id=cfg.tts.voice)
+    speaker = make_speaker(voice_id=cfg.tts.voice, speed=cfg.tts.speed)
 
     print(f"voice-assistant ready. Press {cfg.audio.hotkey} to talk.")
     while True:

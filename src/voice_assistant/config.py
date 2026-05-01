@@ -19,14 +19,22 @@ class UserConfig(BaseModel):
 
 
 class STTConfig(BaseModel):
-    engine: Literal["faster-whisper"]
-    model: str
-    language: str = "en"
+    engine: Literal["faster-whisper"] = "faster-whisper"
+    model: str = "small"
+    language: str = "auto"   # "auto" or ISO 639-1 code
 
 
 class TTSConfig(BaseModel):
-    engine: Literal["piper", "elevenlabs"]
-    voice: str
+    engine: Literal["piper", "openai", "elevenlabs"] = "piper"
+    voice: str = "piper:en_US-amy-medium"   # full id from the catalog
+
+    @field_validator("voice")
+    @classmethod
+    def _check_voice_id(cls, v: str) -> str:
+        # Allow either bare piper voice (legacy: "en_US-amy-medium") or prefixed.
+        if ":" not in v:
+            return f"piper:{v}"
+        return v
 
 
 class AudioConfig(BaseModel):
@@ -69,6 +77,7 @@ class Config(BaseModel):
     gmail: GmailConfig | None = None
     logging: LoggingConfig
     user: UserConfig = Field(default_factory=UserConfig)
+    avatar: str = Field(default="aria")   # UI metadata: aria | liam | sage
 
 
 def load_config(path: Path) -> Config:

@@ -84,7 +84,7 @@ python3 -m venv "$VA_HOME/.venv"
 
 say "installing voice-assistant from $REPO_URL"
 "$VA_HOME/.venv/bin/pip" install --upgrade pip >/dev/null
-EXTRAS="audio,gmail,web,memory,browser"
+EXTRAS="audio,gmail,web,memory,browser,wake"
 if [ -z "${VA_NO_DESKTOP:-}" ]; then EXTRAS="$EXTRAS,desktop"; fi
 "$VA_HOME/.venv/bin/pip" install "voice-assistant[$EXTRAS] @ git+$REPO_URL"
 

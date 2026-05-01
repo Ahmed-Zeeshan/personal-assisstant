@@ -123,12 +123,18 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
 
     transcriber = None
     listener = None
+    wake_listener = None
     if cfg.audio.trigger == "hotkey":
         try:
             transcriber = Transcriber(model_name=cfg.stt.model, language=cfg.stt.language)
             listener    = HotkeyListener(cfg.audio.hotkey)
         except Exception as exc:
             log.warning("audio init failed (%s); voice mode disabled", exc)
+    elif cfg.audio.trigger == "wake_word":
+        try:
+            transcriber = Transcriber(model_name=cfg.stt.model, language=cfg.stt.language)
+        except Exception as exc:
+            log.warning("STT init failed (%s); voice mode disabled", exc)
 
     # Holder for the active orchestrator. Settings save can swap this out so
     # provider/model/key changes take effect without a restart.
@@ -161,7 +167,7 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
         buf = ""
         # Build a fresh per-request streaming speaker (isolated queue + thread).
         speaker_for_request: SentenceQueueSpeaker | None = None
-        if cfg.audio.trigger == "hotkey" and transcriber is not None:
+        if transcriber is not None:
             try:
                 speaker_for_request = SentenceQueueSpeaker(make_speaker(voice_id=cfg.tts.voice))
             except Exception as exc:
@@ -247,6 +253,19 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
 
     if listener is not None:
         threading.Thread(target=_hotkey_worker, daemon=True).start()
+
+    # Wake-word listener (alternative to hotkey).
+    if cfg.audio.trigger == "wake_word":
+        try:
+            from voice_assistant.wake import WakeWordListener
+            wake_listener = WakeWordListener(
+                wake_word=cfg.audio.wake_word,
+                sensitivity=cfg.audio.wake_sensitivity,
+                on_wake=_on_listen_start,
+            )
+            wake_listener.start()
+        except Exception as exc:
+            log.warning("wake-word init failed (%s); voice disabled in GUI", exc)
 
     DesktopApp(bridge=bridge, bus=bus).run()
 

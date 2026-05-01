@@ -17,12 +17,12 @@ def tmp_paths(tmp_path):
 def bridge_with_config(tmp_paths):
     cfg_path, env_path = tmp_paths
     bus = EventBus()
-    sent: list[str] = []
+    sent: list[tuple[str, list[str]]] = []
     bridge = Bridge(
         config_path=cfg_path,
         env_path=env_path,
         bus=bus,
-        on_send_text=lambda t: sent.append(t),
+        on_send_text=lambda t, imgs: sent.append((t, imgs)),
         on_listening_start=lambda: None,
         on_listening_stop=lambda: None,
     )
@@ -32,7 +32,7 @@ def bridge_with_config(tmp_paths):
 def test_bridge_send_text_invokes_callback(bridge_with_config):
     bridge, _, sent, _, _ = bridge_with_config
     bridge.send_text("hello")
-    assert sent == ["hello"]
+    assert sent == [("hello", [])]
 
 
 def test_bridge_get_config_returns_default_shape_when_missing(bridge_with_config):

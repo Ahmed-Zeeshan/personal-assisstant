@@ -341,8 +341,12 @@ def build_registry(
 
     # ---- whatsapp tool (optional; requires [browser] extra + playwright install) --
     try:
-        from voice_assistant.tools.whatsapp import WHATSAPP_SCHEMA
-        from voice_assistant.tools.whatsapp import send_whatsapp_message as _wa_fn
+        from voice_assistant.tools.whatsapp import (
+            WHATSAPP_CONTACT_SCHEMA,
+            WHATSAPP_SCHEMA,
+            send_whatsapp_message as _wa_fn,
+            send_whatsapp_to_contact as _wa_contact_fn,
+        )
 
         def _wrap_wa_tool(fn: Any) -> Any:
             def _wrapped(**kwargs: Any) -> ToolResult:
@@ -362,6 +366,15 @@ def build_registry(
                 description=_wa_info.get("description", ""),
                 parameters=_wa_info.get("parameters", {}),
                 func=_wrap_wa_tool(_wa_fn),
+            )
+        )
+        _wa_contact_info = cast(dict[str, Any], WHATSAPP_CONTACT_SCHEMA.get("function", {}))
+        specs.append(
+            ToolSpec(
+                name="send_whatsapp_to_contact",
+                description=_wa_contact_info.get("description", ""),
+                parameters=_wa_contact_info.get("parameters", {}),
+                func=_wrap_wa_tool(_wa_contact_fn),
             )
         )
     except ImportError:

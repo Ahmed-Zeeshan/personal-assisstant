@@ -102,6 +102,136 @@ def send_whatsapp_message(*, phone: str, message: str) -> dict[str, Any]:
         raise RuntimeError(f"failed to click send button: {exc}") from exc
 
 
+def send_whatsapp_to_contact(*, name: str, message: str) -> dict[str, Any]:
+    """Send a WhatsApp message to a contact found by name via WhatsApp Web search.
+
+    Steps:
+      1. Open https://web.whatsapp.com (persistent profile preserves login)
+      2. Click the search box (data-testid="chat-list-search")
+      3. Type the contact name
+      4. Click the first result (matching exact or close-name)
+      5. Click the message composer
+      6. Type the message
+      7. Click the send button
+    """
+    if not name.strip():
+        raise ValueError("contact name required")
+    if not message.strip() or len(message) > 1000:
+        raise ValueError("message empty or > 1000 chars")
+    _check_rate_limit()
+
+    sess = _session()
+    sess.goto("https://web.whatsapp.com/")
+
+    # Wait for WhatsApp Web to load (logged-in state)
+    try:
+        sess.wait_for(
+            'div[contenteditable="true"][data-tab="3"], '
+            'div[role="textbox"][contenteditable="true"], '
+            'header[data-testid="chatlist-header"]',
+            timeout_ms=30000,
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            "WhatsApp Web didn't load. If this is your first send, you may need "
+            "to scan the QR code in the launched browser."
+        ) from exc
+
+    # Search for the contact
+    search_selectors = [
+        'div[contenteditable="true"][data-tab="3"]',
+        'div[role="textbox"][title*="Search"]',
+        'div[contenteditable="true"]:not([data-tab="10"])',
+    ]
+    searched = False
+    for sel in search_selectors:
+        try:
+            sess.click(sel)
+            sess.type_text(sel, name)
+            searched = True
+            break
+        except Exception:
+            continue
+    if not searched:
+        raise RuntimeError("couldn't find WhatsApp Web search box")
+
+    # Wait for results, click the first chat-row
+    try:
+        sess.wait_for(
+            'div[role="listitem"], div[data-testid^="cell-frame-container"]',
+            timeout_ms=10000,
+        )
+    except Exception as exc:
+        raise RuntimeError(f"no results found for {name!r}") from exc
+
+    for sel in (
+        'div[role="listitem"]:first-of-type',
+        'div[data-testid^="cell-frame-container"]:first-of-type',
+        'div[role="listitem"]',
+    ):
+        try:
+            sess.click(sel)
+            break
+        except Exception:
+            continue
+
+    # Click compose box and type
+    compose_selectors = [
+        'div[contenteditable="true"][data-tab="10"]',
+        'div[role="textbox"][contenteditable="true"][data-tab="10"]',
+        'footer div[contenteditable="true"]',
+    ]
+    typed = False
+    for sel in compose_selectors:
+        try:
+            sess.click(sel)
+            sess.type_text(sel, message)
+            typed = True
+            break
+        except Exception:
+            continue
+    if not typed:
+        raise RuntimeError("couldn't find WhatsApp Web message composer")
+
+    # Send
+    for sel in ('[data-testid="send"]', 'button[aria-label="Send"]', 'span[data-icon="send"]'):
+        try:
+            sess.click(sel)
+            _recent_sends.append(time.time())
+            return {"ok": True, "contact": name}
+        except Exception:
+            continue
+    try:
+        sess.keyboard_press("Enter")
+        _recent_sends.append(time.time())
+        return {"ok": True, "contact": name, "via": "enter-key"}
+    except Exception as exc:
+        raise RuntimeError(f"failed to send: {exc}") from exc
+
+
+WHATSAPP_CONTACT_SCHEMA: dict[str, Any] = {
+    "type": "function",
+    "function": {
+        "name": "send_whatsapp_to_contact",
+        "description": (
+            "Send a WhatsApp message to a contact found by NAME (e.g. 'Arslan', 'Mom'). "
+            "Searches WhatsApp Web for the name and sends to the first matching chat. "
+            "Use this when the user gives a name; use send_whatsapp_message when they give a phone number. "
+            "Rate-limited to 5/5min."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string", "description": "Contact name as it appears in WhatsApp"},
+                "message": {"type": "string", "description": "Message text, ≤1000 chars"},
+            },
+            "required": ["name", "message"],
+            "additionalProperties": False,
+        },
+    },
+}
+
+
 WHATSAPP_SCHEMA: dict[str, Any] = {
     "type": "function",
     "function": {

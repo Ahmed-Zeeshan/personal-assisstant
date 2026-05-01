@@ -6,6 +6,7 @@ queued for synthesis on a background thread, and the chunker carries on
 buffering the next.
 """
 from __future__ import annotations
+
 import logging
 import queue
 import re
@@ -70,7 +71,7 @@ class SentenceQueueSpeaker:
 
     def __init__(self, speaker: Speaker) -> None:
         self._speaker = speaker
-        self._q: queue.Queue = queue.Queue()
+        self._q: queue.Queue[object] = queue.Queue()
         self._chunker = StreamingSentenceChunker()
         self._thread = threading.Thread(target=self._run, daemon=True, name="va-tts")
         self._thread.start()
@@ -94,7 +95,7 @@ class SentenceQueueSpeaker:
                 if item is self._SENTINEL:
                     return
                 try:
-                    self._speaker.speak(item)
+                    self._speaker.speak(str(item))
                 except Exception:
                     log.exception("speaker.speak failed for sentence")
             finally:

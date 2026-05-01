@@ -1,4 +1,4 @@
-from voice_assistant.voice_catalog import VOICES, voices_for, find_voice
+from voice_assistant.voice_catalog import find_voice, voices_for
 
 
 def test_catalog_has_english_piper():

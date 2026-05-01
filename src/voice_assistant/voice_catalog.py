@@ -9,6 +9,7 @@ Each voice has:
   notes     — optional, shown as small text in the UI
 """
 from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Literal
 
@@ -61,7 +62,7 @@ _PIPER_VOICES = [
 
 VOICES: list[Voice] = []
 
-# OpenAI: each voice × each language is one VOICES entry. The id stays voice-only;
+# OpenAI: each voice x each language is one VOICES entry. The id stays voice-only;
 # `language` is metadata used for filtering. The OpenAI TTS engine ignores language
 # (the model auto-detects); we only use it to group in the UI.
 for lang, lang_label in _OPENAI_LANGUAGES:

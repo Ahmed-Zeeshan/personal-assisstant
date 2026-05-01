@@ -17,7 +17,7 @@ from voice_assistant.setup_wizard import (
     render_config,
     render_env,
 )
-from voice_assistant.voice_catalog import VOICES, STT_LANGUAGES
+from voice_assistant.voice_catalog import STT_LANGUAGES, VOICES
 
 if TYPE_CHECKING:
     from voice_assistant.history import History

@@ -3,10 +3,10 @@
 Streams audio bytes from the OpenAI API and plays via sounddevice.
 """
 from __future__ import annotations
+
 import io
 import logging
 import os
-from typing import Any
 
 from voice_assistant.tts.base import Speaker
 
@@ -29,9 +29,9 @@ class OpenAISpeaker(Speaker):
         if not text.strip():
             return
         try:
-            from openai import OpenAI  # type: ignore
-            import sounddevice as sd  # type: ignore
-            import soundfile as sf    # type: ignore
+            import sounddevice as sd
+            import soundfile as sf  # type: ignore[import-not-found]
+            from openai import OpenAI
         except ImportError as exc:
             raise RuntimeError(
                 "OpenAI TTS dependencies missing. Install with: pip install openai soundfile"

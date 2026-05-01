@@ -110,7 +110,7 @@ def render_env(provider: Provider, value: str, *, existing: str) -> str:
 
 
 DEFAULT_MODELS: dict[Provider, str] = {
-    "anthropic": "claude-haiku-4-5",     # was claude-sonnet-4-6 — haiku is ~3-4× faster
+    "anthropic": "claude-haiku-4-5",     # was claude-sonnet-4-6 — haiku is ~3-4x faster
     "openai":    "gpt-5.4-mini",         # was gpt-5.5
     "gemini":    "gemini-3.1-flash",     # was gemini-3.1-pro
     "ollama":    "qwen3:14b",

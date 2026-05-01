@@ -1,4 +1,5 @@
 import pytest
+
 from voice_assistant.tts import make_speaker
 
 

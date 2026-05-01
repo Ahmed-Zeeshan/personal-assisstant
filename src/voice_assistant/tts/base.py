@@ -1,5 +1,6 @@
 """Speaker abstract base class. Each engine implements `speak(text)`."""
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
 
 

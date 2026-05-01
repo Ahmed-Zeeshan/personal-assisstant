@@ -6,7 +6,7 @@ All browser interactions are mocked — no real Chromium or network needed.
 from __future__ import annotations
 
 import time
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -166,6 +166,7 @@ def _make_contact_session(
     wait_raises: Exception | None = None,
     click_raises: bool = False,
     type_text_raises: bool = False,
+    evaluate_return: list | None = None,
 ) -> MagicMock:
     """Mock session for contact-based WhatsApp sends."""
     sess = MagicMock()
@@ -183,14 +184,33 @@ def _make_contact_session(
     else:
         sess.type_text.return_value = {"ok": True}
     sess.keyboard_press.return_value = {"ok": True}
+    sess.screenshot.return_value = {"path": "/tmp/whatsapp-error.png"}
+    # Default: evaluate returns a single match
+    if evaluate_return is None:
+        sess.evaluate.return_value = [
+            {"index": 0, "name": "Arslan Khan", "subtitle": "Hey!"}
+        ]
+    else:
+        sess.evaluate.return_value = evaluate_return
     return sess
+
+
+# --- existing tests (updated to pass confirmed=True for actual sends) ---------
 
 
 def test_contact_send_happy_path(monkeypatch):
     mock_sess = _make_contact_session()
     monkeypatch.setattr("voice_assistant.tools.whatsapp._session", lambda: mock_sess)
+    # Verify message so verified=True
+    mock_sess.evaluate.side_effect = [
+        [{"index": 0, "name": "Arslan Khan", "subtitle": ""}],  # scrape call
+        "where are you?",                                         # verify call
+    ]
 
-    result = send_whatsapp_to_contact(name="Arslan", message="where are you?")
+    with patch("voice_assistant.tools.whatsapp.time") as mock_time:
+        mock_time.time.return_value = 1000.0
+        mock_time.sleep = lambda _: None
+        result = send_whatsapp_to_contact(name="Arslan", message="where are you?", confirmed=True)
 
     assert result["ok"] is True
     assert result["contact"] == "Arslan"
@@ -209,9 +229,13 @@ def test_contact_send_order_of_operations(monkeypatch):
     sess.keyboard_press.side_effect = lambda *a, **kw: call_log.append("keyboard_press") or {
         "ok": True
     }
+    sess.evaluate.return_value = [{"index": 0, "name": "Mom", "subtitle": ""}]
     monkeypatch.setattr("voice_assistant.tools.whatsapp._session", lambda: sess)
 
-    send_whatsapp_to_contact(name="Mom", message="Hi!")
+    with patch("voice_assistant.tools.whatsapp.time") as mock_time:
+        mock_time.time.return_value = 1000.0
+        mock_time.sleep = lambda _: None
+        send_whatsapp_to_contact(name="Mom", message="Hi!", confirmed=True)
 
     # goto is first
     assert call_log[0] == "goto"
@@ -256,7 +280,7 @@ def test_contact_send_shares_rate_limit_with_phone_sender(monkeypatch):
         send_whatsapp_message(phone="+923001234567", message="Hello")
 
     with pytest.raises(RuntimeError, match="rate limit"):
-        send_whatsapp_to_contact(name="Arslan", message="Hi")
+        send_whatsapp_to_contact(name="Arslan", message="Hi", confirmed=True)
 
 
 def test_contact_send_increments_rate_limit(monkeypatch):
@@ -264,7 +288,10 @@ def test_contact_send_increments_rate_limit(monkeypatch):
     monkeypatch.setattr("voice_assistant.tools.whatsapp._session", lambda: mock_sess)
 
     assert len(_recent_sends) == 0
-    send_whatsapp_to_contact(name="Arslan", message="Hello")
+    with patch("voice_assistant.tools.whatsapp.time") as mock_time:
+        mock_time.time.return_value = 1000.0
+        mock_time.sleep = lambda _: None
+        send_whatsapp_to_contact(name="Arslan", message="Hello", confirmed=True)
     assert len(_recent_sends) == 1
 
 
@@ -284,8 +311,210 @@ def test_contact_send_fallback_to_enter_on_click_fail(monkeypatch):
     sess.click.side_effect = selective_click
     monkeypatch.setattr("voice_assistant.tools.whatsapp._session", lambda: sess)
 
-    result = send_whatsapp_to_contact(name="Arslan", message="Hello")
+    with patch("voice_assistant.tools.whatsapp.time") as mock_time:
+        mock_time.time.return_value = 1000.0
+        mock_time.sleep = lambda _: None
+        result = send_whatsapp_to_contact(name="Arslan", message="Hello", confirmed=True)
 
     assert result["ok"] is True
     assert result.get("via") == "enter-key"
     sess.keyboard_press.assert_called_once_with("Enter")
+
+
+# ---- NEW: two-step confirmation tests ----------------------------------------
+
+
+def test_send_whatsapp_to_contact_unconfirmed_returns_preview_does_not_send(monkeypatch):
+    """confirmed=False: navigate+search+scrape but NO compose or send actions."""
+    sess = _make_contact_session(
+        evaluate_return=[
+            {"index": 0, "name": "Arslan Khan", "subtitle": "Hey"},
+            {"index": 1, "name": "Arslan Ali", "subtitle": ""},
+        ]
+    )
+    monkeypatch.setattr("voice_assistant.tools.whatsapp._session", lambda: sess)
+
+    result = send_whatsapp_to_contact(name="Arslan", message="where are you?", confirmed=False)
+
+    # Must return preview structure
+    assert result["confirmation_required"] is True
+    assert "preview" in result
+    assert "matches" in result
+    assert len(result["matches"]) == 2
+    assert result["matches"][0]["name"] == "Arslan Khan"
+
+    # goto and search must have happened
+    sess.goto.assert_called_once_with("https://web.whatsapp.com/")
+    # type_text should have been called (for search box)
+    sess.type_text.assert_called()
+
+    # But the compose box should NOT have been typed into — i.e. type_text should
+    # only have been called for the search (name), never with the message content.
+    type_text_calls = [c.args[1] for c in sess.type_text.call_args_list if c.args]
+    assert "where are you?" not in type_text_calls
+
+    # keyboard_press (Enter/send) must NOT have been called
+    sess.keyboard_press.assert_not_called()
+
+    # Rate limit must NOT have been incremented
+    assert len(_recent_sends) == 0
+
+
+def test_send_whatsapp_to_contact_confirmed_sends_and_verifies(monkeypatch):
+    """confirmed=True: full path; verify returns True when text matches."""
+    sess = _make_contact_session()
+    # First evaluate call = scrape, second = verify
+    sess.evaluate.side_effect = [
+        [{"index": 0, "name": "Arslan Khan", "subtitle": ""}],
+        "where are you?",
+    ]
+    monkeypatch.setattr("voice_assistant.tools.whatsapp._session", lambda: sess)
+
+    with patch("voice_assistant.tools.whatsapp.time") as mock_time:
+        mock_time.time.return_value = 1000.0
+        mock_time.sleep = lambda _: None
+        result = send_whatsapp_to_contact(
+            name="Arslan", message="where are you?", confirmed=True, match_index=0
+        )
+
+    assert result["ok"] is True
+    assert result["verified"] is True
+    assert "warning" not in result
+    # Rate limit incremented
+    assert len(_recent_sends) == 1
+
+
+def test_send_whatsapp_to_contact_with_match_index_clicks_correct_result(monkeypatch):
+    """match_index=2 → the nth-of-type(3) selector is tried first."""
+    sess = _make_contact_session(
+        evaluate_return=[
+            {"index": 0, "name": "A", "subtitle": ""},
+            {"index": 1, "name": "B", "subtitle": ""},
+            {"index": 2, "name": "C", "subtitle": ""},
+        ]
+    )
+    clicked_selectors: list[str] = []
+
+    def record_click(sel: str):
+        clicked_selectors.append(sel)
+        return {"ok": True}
+
+    sess.click.side_effect = record_click
+    # second evaluate = verify
+    sess.evaluate.side_effect = [
+        [{"index": 0, "name": "A"}, {"index": 1, "name": "B"}, {"index": 2, "name": "C"}],
+        None,  # verify returns None → verified=False
+    ]
+    monkeypatch.setattr("voice_assistant.tools.whatsapp._session", lambda: sess)
+
+    with patch("voice_assistant.tools.whatsapp.time") as mock_time:
+        mock_time.time.return_value = 1000.0
+        mock_time.sleep = lambda _: None
+        result = send_whatsapp_to_contact(
+            name="X", message="hello", confirmed=True, match_index=2
+        )
+
+    assert result["ok"] is True
+    # The nth-of-type(3) selector must appear among the clicked selectors
+    assert any("nth-of-type(3)" in s for s in clicked_selectors)
+
+
+def test_send_whatsapp_to_contact_failure_captures_screenshot(monkeypatch):
+    """On click failure, the RuntimeError message includes the screenshot path."""
+    sess = _make_contact_session()
+    # Make scrape succeed, but type_text fail on compose box → triggers compose error path
+    sess.evaluate.return_value = [{"index": 0, "name": "Arslan Khan", "subtitle": ""}]
+    # Allow search clicks to succeed but fail on compose box
+    compose_selectors = {
+        'div[contenteditable="true"][data-tab="10"]',
+        'div[role="textbox"][contenteditable="true"][data-tab="10"]',
+        'footer div[contenteditable="true"]',
+    }
+
+    def selective_type(sel: str, text: str):
+        if sel in compose_selectors:
+            raise Exception("compose not found")
+        return {"ok": True}
+
+    sess.type_text.side_effect = selective_type
+    sess.screenshot.return_value = {"path": "/home/user/.voice-assistant/screenshots/whatsapp-error-1000.png"}
+    monkeypatch.setattr("voice_assistant.tools.whatsapp._session", lambda: sess)
+
+    with patch("voice_assistant.tools.whatsapp.time") as mock_time:
+        mock_time.time.return_value = 1000.0
+        mock_time.sleep = lambda _: None
+        with pytest.raises(RuntimeError) as exc_info:
+            send_whatsapp_to_contact(name="Arslan", message="Hello", confirmed=True)
+
+    # screenshot path should be in the error message
+    error_msg = str(exc_info.value)
+    assert "Screenshot" in error_msg or "whatsapp-error" in error_msg or ".png" in error_msg
+
+
+def test_send_whatsapp_to_contact_verification_mismatch_returns_warning(monkeypatch):
+    """If verify returns False, response includes verified=False and a warning."""
+    sess = _make_contact_session()
+    sess.evaluate.side_effect = [
+        [{"index": 0, "name": "Arslan Khan", "subtitle": ""}],
+        "completely different text",  # mismatch → verified=False
+    ]
+    monkeypatch.setattr("voice_assistant.tools.whatsapp._session", lambda: sess)
+
+    with patch("voice_assistant.tools.whatsapp.time") as mock_time:
+        mock_time.time.return_value = 1000.0
+        mock_time.sleep = lambda _: None
+        result = send_whatsapp_to_contact(name="Arslan", message="hello", confirmed=True)
+
+    assert result["ok"] is True
+    assert result["verified"] is False
+    assert "warning" in result
+
+
+def test_unconfirmed_does_not_count_against_rate_limit(monkeypatch):
+    """Preview calls do NOT consume rate-limit slots."""
+    sess = _make_contact_session()
+    monkeypatch.setattr("voice_assistant.tools.whatsapp._session", lambda: sess)
+
+    # Call preview 5 times — should not exhaust rate limit
+    for _ in range(5):
+        send_whatsapp_to_contact(name="Arslan", message="hi", confirmed=False)
+
+    assert len(_recent_sends) == 0
+
+    # A confirmed send should still be allowed
+    sess.evaluate.side_effect = [
+        [{"index": 0, "name": "Arslan Khan", "subtitle": ""}],
+        "hi",
+    ]
+    with patch("voice_assistant.tools.whatsapp.time") as mock_time:
+        mock_time.time.return_value = 1000.0
+        mock_time.sleep = lambda _: None
+        result = send_whatsapp_to_contact(name="Arslan", message="hi", confirmed=True)
+
+    assert result["ok"] is True
+
+
+def test_preview_contact_name_uses_first_match(monkeypatch):
+    """Preview's 'preview' string uses the first match's resolved name."""
+    sess = _make_contact_session(
+        evaluate_return=[
+            {"index": 0, "name": "Arslan Khan", "subtitle": "Last seen today"},
+        ]
+    )
+    monkeypatch.setattr("voice_assistant.tools.whatsapp._session", lambda: sess)
+
+    result = send_whatsapp_to_contact(name="Arslan", message="hi!", confirmed=False)
+
+    assert "Arslan Khan" in result["preview"]
+    assert "hi!" in result["preview"]
+
+
+def test_preview_falls_back_to_search_term_when_no_matches(monkeypatch):
+    """Preview uses the raw search name when evaluate returns empty list."""
+    sess = _make_contact_session(evaluate_return=[])
+    monkeypatch.setattr("voice_assistant.tools.whatsapp._session", lambda: sess)
+
+    result = send_whatsapp_to_contact(name="Unknown Person", message="test", confirmed=False)
+
+    assert result["confirmation_required"] is True
+    assert "Unknown Person" in result["preview"]

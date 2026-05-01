@@ -133,6 +133,15 @@ class _BrowserSession:
 
         return cast(dict[str, Any], self._run(_wait()))
 
+    def evaluate(self, js: str) -> Any:
+        """Evaluate a JavaScript expression in the current page and return the result."""
+
+        async def _eval() -> Any:
+            page = await self._page()
+            return await page.evaluate(js)
+
+        return self._run(_eval())
+
 
 def _session(profile_dir: Path | None = None) -> _BrowserSession:
     return _BrowserSession.get(

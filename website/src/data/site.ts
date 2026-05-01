@@ -48,6 +48,6 @@ export const site = {
   ],
   footer: {
     author: 'Zeeshan Ahmed',
-    license: 'Private — not for redistribution.',
+    license: 'MIT License',
   },
 };

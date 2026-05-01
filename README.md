@@ -161,4 +161,4 @@ resume a prior session seamlessly.
 
 ## License
 
-Private. Not for redistribution.
+MIT — see [LICENSE](LICENSE).

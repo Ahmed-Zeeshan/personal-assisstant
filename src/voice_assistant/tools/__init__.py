@@ -194,6 +194,7 @@ def build_registry(
             web_fetch,
             web_search,
         )
+
         if web_search is not None and WEB_SEARCH_SCHEMA is not None:
             fn_s = cast(dict[str, Any], WEB_SEARCH_SCHEMA.get("function", {}))
             specs.append(
@@ -231,6 +232,7 @@ def build_registry(
 
         def _embed_fn(text: str) -> list[float]:
             import litellm as _litellm
+
             resp = _litellm.embedding(model="text-embedding-3-small", input=[text])
             return resp.data[0]["embedding"]  # type: ignore[no-any-return]
 
@@ -241,11 +243,14 @@ def build_registry(
 
         def _wrap_dict_tool(fn: Any) -> Any:
             """Wrap a dict-returning tool into a ToolResult-returning callable."""
+
             def _wrapped(**kwargs: Any) -> ToolResult:
                 result = fn(**kwargs)
                 import json as _json
+
                 text = _json.dumps(result, ensure_ascii=False)
                 return ToolResult(ok=True, summary=text[:200], data=result)
+
             _wrapped.__name__ = getattr(fn, "__name__", "tool")
             return _wrapped
 
@@ -269,6 +274,7 @@ def build_registry(
         )
     except Exception as exc:
         import logging as _logging
+
         _logging.getLogger(__name__).warning("memory tools disabled: %s", exc)
 
     # ---- browser tools (optional; requires [browser] extra + playwright install) --
@@ -283,10 +289,10 @@ def build_registry(
         )
 
         _browser_fns: dict[str, Any] = {
-            "browser_goto":     browser_goto,
-            "browser_click":    browser_click,
-            "browser_type":     browser_type,
-            "browser_read":     browser_read,
+            "browser_goto": browser_goto,
+            "browser_click": browser_click,
+            "browser_type": browser_type,
+            "browser_read": browser_read,
             "browser_keyboard": browser_keyboard,
         }
         for _bschema in BROWSER_SCHEMAS:
@@ -299,9 +305,11 @@ def build_registry(
             def _wrap_browser_tool(fn: Any) -> Any:
                 def _wrapped(**kwargs: Any) -> ToolResult:
                     import json as _json
+
                     result = fn(**kwargs)
                     text = _json.dumps(result, ensure_ascii=False)
                     return ToolResult(ok=True, summary=text[:200], data=result)
+
                 _wrapped.__name__ = getattr(fn, "__name__", "browser_tool")
                 return _wrapped
 
@@ -352,6 +360,7 @@ def _wrap_web_result(result: object) -> ToolResult:
     import json
 
     from voice_assistant.tools.schema import ToolResult
+
     if isinstance(result, (list, dict)):
         text = json.dumps(result, ensure_ascii=False)
     else:

@@ -4,6 +4,7 @@ Retries only on transient errors (network, rate-limit, timeout). Does NOT
 retry on programming bugs (ValueError, TypeError, KeyError) — those should
 fail fast.
 """
+
 from __future__ import annotations
 
 import logging
@@ -23,15 +24,21 @@ def _is_transient(exc: BaseException) -> bool:
         return True
     # litellm exceptions are subclasses of openai exceptions in newer versions.
     transient_names = {
-        "RateLimitError", "APIConnectionError", "APITimeoutError",
-        "ServiceUnavailableError", "InternalServerError", "ReadTimeout",
-        "ConnectTimeout", "RemoteProtocolError",
+        "RateLimitError",
+        "APIConnectionError",
+        "APITimeoutError",
+        "ServiceUnavailableError",
+        "InternalServerError",
+        "ReadTimeout",
+        "ConnectTimeout",
+        "RemoteProtocolError",
     }
     return name in transient_names
 
 
 def with_llm_retry(*, max_attempts: int = 3, base_delay: float = 0.5) -> Callable[[F], F]:
     """Retry on transient errors with exponential backoff (0.5, 1.0, 2.0s)."""
+
     def decorator(fn: F) -> F:
         @wraps(fn)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -45,14 +52,19 @@ def with_llm_retry(*, max_attempts: int = 3, base_delay: float = 0.5) -> Callabl
                     last_exc = exc
                     if attempt + 1 == max_attempts:
                         break
-                    delay = base_delay * (2 ** attempt)
+                    delay = base_delay * (2**attempt)
                     log.warning(
                         "transient error %s in %s; retry %d/%d after %.1fs",
-                        type(exc).__name__, fn.__name__,
-                        attempt + 1, max_attempts, delay,
+                        type(exc).__name__,
+                        fn.__name__,
+                        attempt + 1,
+                        max_attempts,
+                        delay,
                     )
                     time.sleep(delay)
             assert last_exc is not None
             raise last_exc
+
         return wrapper  # type: ignore[return-value]
+
     return decorator

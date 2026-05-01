@@ -89,7 +89,7 @@ def test_brain_handles_malformed_tool_call_args_gracefully(monkeypatch):
     tc = MagicMock()
     tc.id = "call_1"
     tc.function.name = "create_folder"
-    tc.function.arguments = '{"path": '   # truncated JSON
+    tc.function.arguments = '{"path": '  # truncated JSON
     fake = make_litellm_response(tool_calls=[tc])
     monkeypatch.setattr("voice_assistant.brain.completion", lambda **kw: fake)
 
@@ -101,6 +101,7 @@ def test_brain_handles_malformed_tool_call_args_gracefully(monkeypatch):
 
 def test_brain_logs_warning_on_multiple_tool_calls(monkeypatch, caplog):
     import logging
+
     tc1 = MagicMock()
     tc1.id = "c1"
     tc1.function.name = "create_folder"
@@ -131,27 +132,29 @@ def test_brain_serialises_assistant_tool_calls_in_history(monkeypatch):
         Message(
             role="assistant",
             content="",
-            tool_calls=[{
-                "id": "call_1",
-                "type": "function",
-                "function": {"name": "create_folder", "arguments": '{"path":"/tmp/x"}'},
-            }],
+            tool_calls=[
+                {
+                    "id": "call_1",
+                    "type": "function",
+                    "function": {"name": "create_folder", "arguments": '{"path":"/tmp/x"}'},
+                }
+            ],
         ),
-        Message(role="tool", content='{"ok": true, "summary": "made /tmp/x"}',
-                tool_call_id="call_1", name="create_folder"),
+        Message(
+            role="tool",
+            content='{"ok": true, "summary": "made /tmp/x"}',
+            tool_call_id="call_1",
+            name="create_folder",
+        ),
     ]
     b = Brain(provider="anthropic", model="claude-sonnet-4-6")
     b.respond(user_text="thanks", history=history, tools=fake_tool())
 
-    assistant_msg = next(
-        m for m in captured["messages"] if m["role"] == "assistant"
-    )
+    assistant_msg = next(m for m in captured["messages"] if m["role"] == "assistant")
     assert "tool_calls" in assistant_msg
     assert assistant_msg["tool_calls"][0]["id"] == "call_1"
 
-    tool_msg = next(
-        m for m in captured["messages"] if m["role"] == "tool"
-    )
+    tool_msg = next(m for m in captured["messages"] if m["role"] == "tool")
     assert tool_msg["tool_call_id"] == "call_1"
 
 

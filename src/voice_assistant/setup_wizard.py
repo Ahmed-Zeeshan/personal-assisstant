@@ -25,7 +25,7 @@ class WizardAnswers:
     voice: str = "piper:en_US-amy-medium"
     stt_language: str = "auto"
     avatar: str = "aria"
-    respond_in: str = "auto"   # "auto" or ISO language code e.g. "ur", "hi"
+    respond_in: str = "auto"  # "auto" or ISO language code e.g. "ur", "hi"
     audio_trigger: str = "hotkey"
     wake_word: str = "hey_jarvis"
     wake_sensitivity: float = 0.5
@@ -87,9 +87,9 @@ def render_config(a: WizardAnswers) -> str:
 
 PROVIDER_ENV_VAR: dict[Provider, str] = {
     "anthropic": "ANTHROPIC_API_KEY",
-    "openai":    "OPENAI_API_KEY",
-    "gemini":    "GEMINI_API_KEY",
-    "ollama":    "OLLAMA_BASE_URL",
+    "openai": "OPENAI_API_KEY",
+    "gemini": "GEMINI_API_KEY",
+    "ollama": "OLLAMA_BASE_URL",
 }
 
 _MANAGED_VARS: frozenset[str] = frozenset(PROVIDER_ENV_VAR.values())
@@ -119,52 +119,52 @@ def render_env(provider: Provider, value: str, *, existing: str) -> str:
 
 
 DEFAULT_MODELS: dict[Provider, str] = {
-    "anthropic": "claude-haiku-4-5",     # was claude-sonnet-4-6 — haiku is ~3-4x faster
-    "openai":    "gpt-5.4-mini",         # was gpt-5.5
-    "gemini":    "gemini-3.1-flash",     # was gemini-3.1-pro
-    "ollama":    "qwen3:14b",
+    "anthropic": "claude-haiku-4-5",  # was claude-sonnet-4-6 — haiku is ~3-4x faster
+    "openai": "gpt-5.4-mini",  # was gpt-5.5
+    "gemini": "gemini-3.1-flash",  # was gemini-3.1-pro
+    "ollama": "qwen3:14b",
 }
 
 # Curated lists of currently-supported models per provider, newest/best first.
 # Deprecated models (gemini-1.5-*, gpt-3.5-*) are intentionally absent.
 MODELS_BY_PROVIDER: dict[Provider, list[str]] = {
     "anthropic": [
-        "claude-opus-4-7",        # most capable
-        "claude-sonnet-4-6",      # balanced — default
-        "claude-haiku-4-5",       # fastest / cheapest
+        "claude-opus-4-7",  # most capable
+        "claude-sonnet-4-6",  # balanced — default
+        "claude-haiku-4-5",  # fastest / cheapest
     ],
     "openai": [
-        "gpt-5.5",                # frontier (default)
-        "gpt-5.4",                # standard
-        "gpt-5.4-mini",           # fast, cheap
-        "gpt-4o",                 # legacy production
+        "gpt-5.5",  # frontier (default)
+        "gpt-5.4",  # standard
+        "gpt-5.4-mini",  # fast, cheap
+        "gpt-4o",  # legacy production
     ],
     "gemini": [
-        "gemini-3.1-pro",         # frontier (default)
-        "gemini-3.1-flash",       # fast
-        "gemini-2.5-flash",       # still supported
+        "gemini-3.1-pro",  # frontier (default)
+        "gemini-3.1-flash",  # fast
+        "gemini-2.5-flash",  # still supported
     ],
     "ollama": [
-        "qwen3:14b",              # balanced default
-        "llama3.3:70b",           # large general-purpose
-        "qwen3.6:27b",            # coding-focused
-        "qwen3-coder:30b",        # long-context coding
-        "gemma3:4b",              # small / fast
+        "qwen3:14b",  # balanced default
+        "llama3.3:70b",  # large general-purpose
+        "qwen3.6:27b",  # coding-focused
+        "qwen3-coder:30b",  # long-context coding
+        "gemma3:4b",  # small / fast
     ],
 }
 
 _PROVIDER_LABELS: dict[Provider, str] = {
     "anthropic": "Anthropic Claude",
-    "openai":    "OpenAI GPT",
-    "gemini":    "Google Gemini",
-    "ollama":    "Ollama (local)",
+    "openai": "OpenAI GPT",
+    "gemini": "Google Gemini",
+    "ollama": "Ollama (local)",
 }
 
 _PROVIDER_MENU: list[tuple[Provider, str]] = [
     ("anthropic", "Anthropic Claude    (recommended)"),
-    ("openai",    "OpenAI GPT"),
-    ("gemini",    "Google Gemini"),
-    ("ollama",    "Ollama (local, no API key)"),
+    ("openai", "OpenAI GPT"),
+    ("gemini", "Google Gemini"),
+    ("ollama", "Ollama (local, no API key)"),
 ]
 
 DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434"
@@ -181,20 +181,30 @@ def _supports_color() -> bool:
 
 class _C:
     """ANSI colour helpers that no-op on non-TTY stdout."""
+
     @staticmethod
     def _wrap(code: str, text: str) -> str:
         return f"\033[{code}m{text}\033[0m" if _supports_color() else text
 
     @classmethod
-    def bold(cls, t: str) -> str:    return cls._wrap("1", t)
+    def bold(cls, t: str) -> str:
+        return cls._wrap("1", t)
+
     @classmethod
-    def dim(cls, t: str) -> str:     return cls._wrap("2", t)
+    def dim(cls, t: str) -> str:
+        return cls._wrap("2", t)
+
     @classmethod
-    def violet(cls, t: str) -> str:  return cls._wrap("38;5;141", t)
+    def violet(cls, t: str) -> str:
+        return cls._wrap("38;5;141", t)
+
     @classmethod
-    def green(cls, t: str) -> str:   return cls._wrap("32", t)
+    def green(cls, t: str) -> str:
+        return cls._wrap("32", t)
+
     @classmethod
-    def cyan(cls, t: str) -> str:    return cls._wrap("36", t)
+    def cyan(cls, t: str) -> str:
+        return cls._wrap("36", t)
 
 
 def _print_welcome_banner() -> None:
@@ -204,7 +214,7 @@ def _print_welcome_banner() -> None:
     print()
     print(_C.violet("╭" + bar + "╮"))
     title = "voice-assistant — setup".center(width)
-    sub   = "Pick an LLM, paste your key, you're done.".center(width)
+    sub = "Pick an LLM, paste your key, you're done.".center(width)
     print(_C.violet("│") + _C.bold(title) + _C.violet("│"))
     print(_C.violet("│") + _C.dim(sub) + _C.violet("│"))
     print(_C.violet("╰" + bar + "╯"))
@@ -230,7 +240,14 @@ def _print_completion_banner(answers: WizardAnswers, config_path: Path, env_path
     # Centred title row (manual padding because of ANSI codes)
     raw_title = "✓ voice-assistant configured"
     pad = (width - len(raw_title)) // 2
-    print(_C.violet("│") + " " * pad + _C.green("✓ ") + _C.bold("voice-assistant configured") + " " * (width - pad - len(raw_title)) + _C.violet("│"))
+    print(
+        _C.violet("│")
+        + " " * pad
+        + _C.green("✓ ")
+        + _C.bold("voice-assistant configured")
+        + " " * (width - pad - len(raw_title))
+        + _C.violet("│")
+    )
     print(_C.violet("│") + " " * width + _C.violet("│"))
     print(_row("Provider:  ", provider_label))
     print(_row("Model:     ", answers.model))
@@ -305,17 +322,11 @@ def run_wizard(
         model = _prompt_with_default("\n2) Model name", DEFAULT_MODELS[provider])
 
         if provider == "ollama":
-            secret = _prompt_with_default(
-                "\n3) Ollama base URL", DEFAULT_OLLAMA_BASE_URL
-            )
+            secret = _prompt_with_default("\n3) Ollama base URL", DEFAULT_OLLAMA_BASE_URL)
         else:
-            secret = _prompt_secret(
-                f"\n3) {provider.capitalize()} API key (hidden, paste & enter)"
-            )
+            secret = _prompt_secret(f"\n3) {provider.capitalize()} API key (hidden, paste & enter)")
 
-        hotkey = _prompt_with_default(
-            "\n4) Hotkey to start listening", "ctrl+shift+space"
-        )
+        hotkey = _prompt_with_default("\n4) Hotkey to start listening", "ctrl+shift+space")
         roots_raw = _prompt_with_default(
             "\n5) Folders the assistant may touch (comma-separated)", "~"
         )

@@ -5,6 +5,7 @@ Loguru gives:
 - pretty colour sink for the terminal
 - per-record context (request_id, user, tool name) when set via loguru.contextualize
 """
+
 from __future__ import annotations
 
 import logging
@@ -30,9 +31,7 @@ class _InterceptHandler(logging.Handler):
                 break
             frame = next_frame
             depth += 1
-        logger.opt(depth=depth, exception=record.exc_info).log(
-            level, record.getMessage()
-        )
+        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
 
 
 def configure_logging(level: str = "INFO", log_file: Path | str | None = None) -> None:
@@ -52,11 +51,11 @@ def configure_logging(level: str = "INFO", log_file: Path | str | None = None) -
         path.parent.mkdir(parents=True, exist_ok=True)
         logger.add(
             path,
-            level=level,     # respect the configured level for file too
+            level=level,  # respect the configured level for file too
             rotation="10 MB",
             retention="7 days",
             serialize=True,  # JSON
-            enqueue=False,   # synchronous so test flushes work
+            enqueue=False,  # synchronous so test flushes work
         )
 
     # Install the stdlib→loguru intercept handler.

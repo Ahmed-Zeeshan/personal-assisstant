@@ -1,4 +1,5 @@
 """Gmail send_email tool with OAuth2 (gmail.send scope only)."""
+
 from __future__ import annotations
 
 import base64
@@ -44,41 +45,26 @@ def _build_service(credentials_file: Path) -> Any:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                str(credentials_file), SCOPES
-            )
-            creds = flow.run_local_server(
-                port=0, timeout_seconds=OAUTH_TIMEOUT_SECONDS
-            )
+            flow = InstalledAppFlow.from_client_secrets_file(str(credentials_file), SCOPES)
+            creds = flow.run_local_server(port=0, timeout_seconds=OAUTH_TIMEOUT_SECONDS)
         _write_secret(token_path, creds.to_json())
 
     return build("gmail", "v1", credentials=creds, cache_discovery=False)
 
 
-def send_email(
-    to: str, subject: str, body: str, *, credentials_file: str
-) -> ToolResult:
+def send_email(to: str, subject: str, body: str, *, credentials_file: str) -> ToolResult:
     """Send a plain-text email from the user's Gmail account."""
     to = to.strip() if to else ""
     if not to:
-        return ToolResult(
-            ok=False, summary="no recipient", error="empty recipient"
-        )
+        return ToolResult(ok=False, summary="no recipient", error="empty recipient")
     try:
         service = _build_service(Path(credentials_file).expanduser())
         msg = MIMEText(body)
         msg["to"] = to
         msg["subject"] = subject
         raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
-        sent = (
-            service.users()
-            .messages()
-            .send(userId="me", body={"raw": raw})
-            .execute()
-        )
-        return ToolResult(
-            ok=True, summary=f"sent email to {to} (id={sent.get('id')})"
-        )
+        sent = service.users().messages().send(userId="me", body={"raw": raw}).execute()
+        return ToolResult(ok=True, summary=f"sent email to {to} (id={sent.get('id')})")
     except Exception:
         # Detail goes to logs only; the LLM gets a normalized short error.
         log.exception("send_email failed")

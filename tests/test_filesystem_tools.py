@@ -24,6 +24,7 @@ def policy(sandbox: Path) -> SafetyPolicy:
 
 # ---------- create_folder ----------
 
+
 def test_create_folder(policy, sandbox):
     target = sandbox / "alpha" / "beta"
     r = create_folder(str(target), policy=policy)
@@ -37,6 +38,7 @@ def test_create_folder_outside_root_blocked(policy):
 
 
 # ---------- create_file ----------
+
 
 def test_create_file_with_content(policy, sandbox):
     f = sandbox / "hello.txt"
@@ -62,6 +64,7 @@ def test_create_file_overwrite_with_confirmation(policy, sandbox):
 
 # ---------- list_folder ----------
 
+
 def test_list_folder(policy, sandbox):
     (sandbox / "a.txt").write_text("a")
     (sandbox / "b").mkdir()
@@ -80,6 +83,7 @@ def test_list_folder_on_file_returns_error(policy, sandbox):
 
 # ---------- read_file ----------
 
+
 def test_read_file_size_capped(policy, sandbox):
     f = sandbox / "big.txt"
     f.write_text("x" * 200_000)
@@ -95,6 +99,7 @@ def test_read_file_missing_returns_error(policy, sandbox):
 
 
 # ---------- move_path ----------
+
 
 def test_move_path(policy, sandbox):
     src = sandbox / "from.txt"
@@ -126,6 +131,7 @@ def test_move_path_missing_src_returns_error(policy, sandbox):
 
 
 # ---------- delete_path ----------
+
 
 def test_delete_path_requires_confirmation(policy, sandbox):
     f = sandbox / "x.txt"
@@ -175,6 +181,7 @@ def test_delete_rate_limit_blocks(sandbox):
 
 
 # ---------- decorator metadata ----------
+
 
 def test_wrap_preserves_function_metadata():
     assert create_folder.__name__ == "create_folder"

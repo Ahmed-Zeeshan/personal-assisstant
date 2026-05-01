@@ -3,6 +3,7 @@
 openWakeWord and sounddevice are mocked out so the test suite can run without
 installing the `wake` extra or connecting a microphone.
 """
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
@@ -15,8 +16,10 @@ from voice_assistant.wake import WakeWordError, WakeWordListener
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _make_listener(wake_word: str = "hey_jarvis", sensitivity: float = 0.5,
-                   on_wake=None) -> WakeWordListener:
+
+def _make_listener(
+    wake_word: str = "hey_jarvis", sensitivity: float = 0.5, on_wake=None
+) -> WakeWordListener:
     return WakeWordListener(
         wake_word=wake_word,
         sensitivity=sensitivity,
@@ -34,6 +37,7 @@ def _fake_model(wake_word: str, score: float) -> MagicMock:
 # ---------------------------------------------------------------------------
 # Unit tests — no real audio, no real model
 # ---------------------------------------------------------------------------
+
 
 class TestWakeWordListenerInit:
     def test_defaults(self):
@@ -85,6 +89,7 @@ def _block_import(blocked: str):
         if name == blocked or name.startswith(blocked + "."):
             raise ImportError(f"No module named '{blocked}'")
         return real_import(name, *args, **kwargs)
+
     return _side
 
 
@@ -98,23 +103,25 @@ def _allow_only_block(blocked: str, oww_fake: MagicMock):
         if name == "openwakeword" or name.startswith("openwakeword."):
             return oww_fake
         return real_import(name, *args, **kwargs)
+
     return _side
 
 
 class TestWakeWordDetection:
     """Test detection logic with fully mocked model and sounddevice."""
 
-    def _run_listener_once(self, wake_word: str, score: float, sensitivity: float,
-                           fired: list):
+    def _run_listener_once(self, wake_word: str, score: float, sensitivity: float, fired: list):
         """Run one iteration of the listener loop and return whether callback fired."""
         import numpy as np
 
-        wl = _make_listener(wake_word=wake_word, sensitivity=sensitivity,
-                            on_wake=lambda: fired.append(1))
+        wl = _make_listener(
+            wake_word=wake_word, sensitivity=sensitivity, on_wake=lambda: fired.append(1)
+        )
 
         # Fake audio chunk: 1280 int16 samples
-        fake_chunk = np.zeros((_make_listener._CHUNK if hasattr(_make_listener, "_CHUNK") else 1280, 1),
-                              dtype="int16")
+        fake_chunk = np.zeros(
+            (_make_listener._CHUNK if hasattr(_make_listener, "_CHUNK") else 1280, 1), dtype="int16"
+        )
 
         # Mock sounddevice InputStream as a context manager
         fake_stream = MagicMock()
@@ -132,6 +139,7 @@ class TestWakeWordDetection:
 
         # Let the loop run exactly once then stop
         call_count = [0]
+
         def fake_is_set():
             # First call (loop check): let it pass
             # Second call (loop check): stop
@@ -147,8 +155,11 @@ class TestWakeWordDetection:
 
     def test_above_threshold_fires_callback(self):
         import numpy as np
+
         fired: list = []
-        wl = _make_listener(wake_word="hey_jarvis", sensitivity=0.5, on_wake=lambda: fired.append(1))
+        wl = _make_listener(
+            wake_word="hey_jarvis", sensitivity=0.5, on_wake=lambda: fired.append(1)
+        )
 
         fake_chunk = np.zeros((1280, 1), dtype="int16")
         fake_stream = MagicMock()
@@ -162,6 +173,7 @@ class TestWakeWordDetection:
         wl._model = _fake_model("hey_jarvis", 0.9)  # above threshold
 
         call_count = [0]
+
         def fake_is_set():
             call_count[0] += 1
             return call_count[0] > 1  # stop after 1 iteration
@@ -173,8 +185,11 @@ class TestWakeWordDetection:
 
     def test_below_threshold_does_not_fire(self):
         import numpy as np
+
         fired: list = []
-        wl = _make_listener(wake_word="hey_jarvis", sensitivity=0.5, on_wake=lambda: fired.append(1))
+        wl = _make_listener(
+            wake_word="hey_jarvis", sensitivity=0.5, on_wake=lambda: fired.append(1)
+        )
 
         fake_chunk = np.zeros((1280, 1), dtype="int16")
         fake_stream = MagicMock()
@@ -188,6 +203,7 @@ class TestWakeWordDetection:
         wl._model = _fake_model("hey_jarvis", 0.1)  # below threshold
 
         call_count = [0]
+
         def fake_is_set():
             call_count[0] += 1
             return call_count[0] > 1
@@ -199,8 +215,11 @@ class TestWakeWordDetection:
 
     def test_exactly_at_threshold_fires(self):
         import numpy as np
+
         fired: list = []
-        wl = _make_listener(wake_word="hey_jarvis", sensitivity=0.5, on_wake=lambda: fired.append(1))
+        wl = _make_listener(
+            wake_word="hey_jarvis", sensitivity=0.5, on_wake=lambda: fired.append(1)
+        )
 
         fake_chunk = np.zeros((1280, 1), dtype="int16")
         fake_stream = MagicMock()
@@ -214,6 +233,7 @@ class TestWakeWordDetection:
         wl._model = _fake_model("hey_jarvis", 0.5)  # exactly at threshold
 
         call_count = [0]
+
         def fake_is_set():
             call_count[0] += 1
             return call_count[0] > 1
@@ -226,11 +246,13 @@ class TestWakeWordDetection:
     def test_model_not_imported_at_module_level(self):
         """Verify that importing wake does NOT import openwakeword."""
         import sys
+
         # Remove any cached openwakeword reference so the check is clean
         oww_key = "openwakeword"
         was_present = oww_key in sys.modules
         try:
             import voice_assistant.wake  # noqa: F401
+
             # openwakeword should NOT have been imported as a side-effect
             # (it's only imported lazily inside start())
             assert oww_key not in sys.modules or sys.modules.get(oww_key) is not None

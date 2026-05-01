@@ -3,6 +3,7 @@
 Voice models are cached at ~/.cache/piper. First use of a new voice
 downloads both the .onnx model and the .onnx.json config.
 """
+
 from __future__ import annotations
 
 import logging
@@ -61,8 +62,10 @@ def _ensure_model(voice: str) -> Path:
     model_path = _CACHE_DIR / f"{voice}.onnx"
     config_path = _CACHE_DIR / f"{voice}.onnx.json"
     needs_download = (
-        not model_path.exists() or model_path.stat().st_size == 0
-        or not config_path.exists() or config_path.stat().st_size == 0
+        not model_path.exists()
+        or model_path.stat().st_size == 0
+        or not config_path.exists()
+        or config_path.stat().st_size == 0
     )
     if needs_download:
         log.info("downloading piper voice %s to %s", voice, _CACHE_DIR)

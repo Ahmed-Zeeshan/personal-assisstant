@@ -26,15 +26,11 @@ class Orchestrator:
 
     def handle(self, user_text: str) -> str:
         log.info("user: %s", user_text)
-        response = self.brain.respond(
-            user_text=user_text, history=self.history, tools=self.tools
-        )
+        response = self.brain.respond(user_text=user_text, history=self.history, tools=self.tools)
         self.history.append(Message(role="user", content=user_text))
 
         if isinstance(response, PlainText):
-            self.history.append(
-                Message(role="assistant", content=response.content)
-            )
+            self.history.append(Message(role="assistant", content=response.content))
             log.info("assistant: %s", response.content)
             return response.content
 
@@ -44,7 +40,8 @@ class Orchestrator:
         spec = self._tool_by_name(tc.name)
         if spec is None:
             result = ToolResult(
-                ok=False, summary=f"unknown tool {tc.name}",
+                ok=False,
+                summary=f"unknown tool {tc.name}",
                 error="tool not registered",
             )
         else:
@@ -52,7 +49,9 @@ class Orchestrator:
                 result = spec.func(**tc.arguments)
             except TypeError as e:
                 result = ToolResult(
-                    ok=False, summary="bad arguments", error=str(e),
+                    ok=False,
+                    summary="bad arguments",
+                    error=str(e),
                 )
 
         log.info("tool_result: %s", result.summary)
@@ -62,14 +61,16 @@ class Orchestrator:
             Message(
                 role="assistant",
                 content="",
-                tool_calls=[{
-                    "id": tc.id,
-                    "type": "function",
-                    "function": {
-                        "name": tc.name,
-                        "arguments": json.dumps(tc.arguments),
-                    },
-                }],
+                tool_calls=[
+                    {
+                        "id": tc.id,
+                        "type": "function",
+                        "function": {
+                            "name": tc.name,
+                            "arguments": json.dumps(tc.arguments),
+                        },
+                    }
+                ],
             )
         )
         self.history.append(
@@ -82,9 +83,7 @@ class Orchestrator:
         )
 
         followup = self.brain.respond(
-            user_text=(
-                "Tool result above. Reply to the user in one short sentence."
-            ),
+            user_text=("Tool result above. Reply to the user in one short sentence."),
             history=self.history,
             tools=[],
         )
@@ -137,10 +136,20 @@ class Orchestrator:
             # Continue loop: feed result back to brain
             messages = [
                 *messages,
-                {"role": "assistant", "content": text_buf or None,
-                 "tool_calls": [{"id": tool_call.id, "type": "function",
-                                 "function": {"name": tool_call.name,
-                                              "arguments": json.dumps(tool_call.args)}}]},
+                {
+                    "role": "assistant",
+                    "content": text_buf or None,
+                    "tool_calls": [
+                        {
+                            "id": tool_call.id,
+                            "type": "function",
+                            "function": {
+                                "name": tool_call.name,
+                                "arguments": json.dumps(tool_call.args),
+                            },
+                        }
+                    ],
+                },
                 {"role": "tool", "tool_call_id": tool_call.id, "content": result_text},
             ]
         yield {"type": "done"}

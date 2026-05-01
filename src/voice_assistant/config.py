@@ -16,18 +16,18 @@ class UserConfig(BaseModel):
     name: str | None = None
     address_as: Literal["first_name", "full_name", "title", "none"] = "none"
     title: str | None = None
-    respond_in: str = "auto"   # "auto" or ISO language code e.g. "ur", "hi", "cs"
+    respond_in: str = "auto"  # "auto" or ISO language code e.g. "ur", "hi", "cs"
 
 
 class STTConfig(BaseModel):
     engine: Literal["faster-whisper"] = "faster-whisper"
     model: str = "small"
-    language: str = "auto"   # "auto" or ISO 639-1 code
+    language: str = "auto"  # "auto" or ISO 639-1 code
 
 
 class TTSConfig(BaseModel):
     engine: Literal["piper", "openai", "elevenlabs"] = "piper"
-    voice: str = "piper:en_US-amy-medium"   # full id from the catalog
+    voice: str = "piper:en_US-amy-medium"  # full id from the catalog
 
     @field_validator("voice")
     @classmethod
@@ -80,7 +80,7 @@ class Config(BaseModel):
     gmail: GmailConfig | None = None
     logging: LoggingConfig
     user: UserConfig = Field(default_factory=UserConfig)
-    avatar: str = Field(default="aria")   # UI metadata: aria | liam | sage
+    avatar: str = Field(default="aria")  # UI metadata: aria | liam | sage
 
 
 def load_config(path: Path) -> Config:

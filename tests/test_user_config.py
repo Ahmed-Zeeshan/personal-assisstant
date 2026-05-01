@@ -9,12 +9,17 @@ from voice_assistant.setup_wizard import WizardAnswers, render_config
 
 def _ans(**overrides):
     base = dict(
-        provider="anthropic", model="claude-sonnet-4-6",
+        provider="anthropic",
+        model="claude-sonnet-4-6",
         hotkey="ctrl+shift+space",
         allowed_roots=[Path("~")],
         ollama_base_url=None,
-        user_name=None, user_address_as="none", user_title=None,
-        voice="piper:en_US-amy-medium", stt_language="auto", avatar="aria",
+        user_name=None,
+        user_address_as="none",
+        user_title=None,
+        voice="piper:en_US-amy-medium",
+        stt_language="auto",
+        avatar="aria",
     )
     base.update(overrides)
     return WizardAnswers(**base)
@@ -65,7 +70,9 @@ def test_render_config_respond_in_auto_omitted():
 
 
 def test_render_config_respond_in_written_when_set():
-    yaml_text = render_config(_ans(user_name="Zeeshan", user_address_as="first_name", respond_in="ur"))
+    yaml_text = render_config(
+        _ans(user_name="Zeeshan", user_address_as="first_name", respond_in="ur")
+    )
     cfg = Config.model_validate(yaml.safe_load(yaml_text))
     assert cfg.user.respond_in == "ur"
 
@@ -86,7 +93,9 @@ user:  { name: Alice, address_as: first_name }
 
 
 def test_render_config_audio_wake_word_fields_round_trip():
-    yaml_text = render_config(_ans(audio_trigger="wake_word", wake_word="alexa", wake_sensitivity=0.7))
+    yaml_text = render_config(
+        _ans(audio_trigger="wake_word", wake_word="alexa", wake_sensitivity=0.7)
+    )
     cfg = Config.model_validate(yaml.safe_load(yaml_text))
     assert cfg.audio.trigger == "wake_word"
     assert cfg.audio.wake_word == "alexa"

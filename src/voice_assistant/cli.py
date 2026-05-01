@@ -20,22 +20,28 @@ log = logging.getLogger(__name__)
 def main() -> None:
     parser = argparse.ArgumentParser(prog="voice-assistant")
     parser.add_argument(
-        "--config", type=Path, default=Path("config.yaml"),
+        "--config",
+        type=Path,
+        default=Path("config.yaml"),
         help="Path to config file (default: ./config.yaml)",
     )
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("--text",   action="store_true", help="Text mode (no audio).")
-    mode.add_argument("--setup",  action="store_true", help="Run interactive setup wizard.")
-    mode.add_argument("--gui",    action="store_true", help="Force desktop window mode.")
-    mode.add_argument("--no-gui", action="store_true", help="Force CLI mode even with a display.", dest="no_gui")
+    mode.add_argument("--text", action="store_true", help="Text mode (no audio).")
+    mode.add_argument("--setup", action="store_true", help="Run interactive setup wizard.")
+    mode.add_argument("--gui", action="store_true", help="Force desktop window mode.")
+    mode.add_argument(
+        "--no-gui", action="store_true", help="Force CLI mode even with a display.", dest="no_gui"
+    )
     parser.add_argument(
-        "--force", action="store_true",
+        "--force",
+        action="store_true",
         help="With --setup: overwrite an existing config without prompting.",
     )
     args = parser.parse_args()
 
     if args.setup:
         from voice_assistant.setup_wizard import run_wizard
+
         home = Path.home() / ".voice-assistant"
         run_wizard(
             config_path=home / "config.yaml",
@@ -94,6 +100,7 @@ def _gui_available() -> bool:
     """Heuristic: do we have a graphical session AND PyWebView AND the bundle?"""
     import os
     import sys
+
     if os.environ.get("VA_NO_GUI"):
         return False
     if sys.platform.startswith("linux"):
@@ -105,6 +112,7 @@ def _gui_available() -> bool:
         return False
     try:
         from voice_assistant.desktop.window import _resolve_index_html
+
         _resolve_index_html()
     except Exception:
         return False
@@ -132,7 +140,7 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
     if cfg.audio.trigger == "hotkey":
         try:
             transcriber = Transcriber(model_name=cfg.stt.model, language=cfg.stt.language)
-            listener    = HotkeyListener(cfg.audio.hotkey)
+            listener = HotkeyListener(cfg.audio.hotkey)
         except Exception as exc:
             log.warning("audio init failed (%s); voice mode disabled", exc)
     elif cfg.audio.trigger == "wake_word":
@@ -157,7 +165,9 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
             destructive_requires_confirmation=new_cfg.safety.destructive_requires_confirmation,
             delete_rate_per_minute=new_cfg.safety.delete_rate_per_minute,
         )
-        new_brain = Brain(provider=new_cfg.brain.provider, model=new_cfg.brain.model, user=new_cfg.user)
+        new_brain = Brain(
+            provider=new_cfg.brain.provider, model=new_cfg.brain.model, user=new_cfg.user
+        )
         new_gmail = None
         if new_cfg.gmail and new_cfg.gmail.credentials_file.exists():
             new_gmail = new_cfg.gmail.credentials_file
@@ -165,8 +175,11 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
             brain=new_brain,
             tools=build_registry(policy=new_policy, gmail_credentials_file=new_gmail),
         )
-        log.info("orchestrator reloaded with provider=%s model=%s",
-                 new_cfg.brain.provider, new_cfg.brain.model)
+        log.info(
+            "orchestrator reloaded with provider=%s model=%s",
+            new_cfg.brain.provider,
+            new_cfg.brain.model,
+        )
 
     def _do_request(text: str) -> None:
         history.append("user", text)
@@ -212,7 +225,9 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
 
     def _record_and_run() -> None:
         if transcriber is None:
-            bus.publish({"type": "toast", "level": "warn", "message": "Voice not available — type instead."})
+            bus.publish(
+                {"type": "toast", "level": "warn", "message": "Voice not available — type instead."}
+            )
             return
         bus.publish({"type": "status", "value": "listening"})
         try:
@@ -266,6 +281,7 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
     if cfg.audio.trigger == "wake_word":
         try:
             from voice_assistant.wake import WakeWordListener
+
             wake_listener = WakeWordListener(
                 wake_word=cfg.audio.wake_word,
                 sensitivity=cfg.audio.wake_sensitivity,

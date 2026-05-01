@@ -27,10 +27,13 @@ def test_web_search_caps_count():
 
 
 def test_web_fetch_returns_clean_text():
-    with patch("voice_assistant.tools.web.httpx") as httpx_mod, \
-         patch("voice_assistant.tools.web.trafilatura") as traf:
-        httpx_mod.get.return_value = MagicMock(text="<html>full html</html>", status_code=200,
-                                                raise_for_status=MagicMock())
+    with (
+        patch("voice_assistant.tools.web.httpx") as httpx_mod,
+        patch("voice_assistant.tools.web.trafilatura") as traf,
+    ):
+        httpx_mod.get.return_value = MagicMock(
+            text="<html>full html</html>", status_code=200, raise_for_status=MagicMock()
+        )
         traf.extract.return_value = "extracted clean text"
         traf.extract_metadata.return_value = MagicMock(title="Page Title")
         out = web_fetch(url="https://example.com/")
@@ -40,6 +43,7 @@ def test_web_fetch_returns_clean_text():
 
 def test_web_fetch_rejects_non_http_urls():
     import pytest
+
     with pytest.raises(ValueError):
         web_fetch(url="file:///etc/passwd")
     with pytest.raises(ValueError):

@@ -21,7 +21,7 @@ BLOCK_SECONDS = 0.1
 def detect_silence(samples: np.ndarray, threshold: float = 0.01) -> bool:
     if samples.size == 0:
         return True
-    rms = float(np.sqrt(np.mean(samples ** 2)))
+    rms = float(np.sqrt(np.mean(samples**2)))
     return rms < threshold
 
 

@@ -35,19 +35,19 @@ def _config_to_dict(path: Path) -> dict[str, Any] | None:
         return None
     return {
         "provider": cfg.brain.provider,
-        "model":    cfg.brain.model,
-        "hotkey":   cfg.audio.hotkey,
+        "model": cfg.brain.model,
+        "hotkey": cfg.audio.hotkey,
         "allowed_roots": [str(p) for p in cfg.safety.allowed_roots],
         "ollama_base_url": None,
-        "user_name":       cfg.user.name,
+        "user_name": cfg.user.name,
         "user_address_as": cfg.user.address_as,
-        "user_title":      cfg.user.title,
-        "respond_in":      cfg.user.respond_in,
-        "voice":           cfg.tts.voice,
-        "stt_language":    cfg.stt.language,
-        "avatar":          getattr(cfg, "avatar", "aria"),
-        "audio_trigger":   cfg.audio.trigger,
-        "wake_word":       cfg.audio.wake_word,
+        "user_title": cfg.user.title,
+        "respond_in": cfg.user.respond_in,
+        "voice": cfg.tts.voice,
+        "stt_language": cfg.stt.language,
+        "avatar": getattr(cfg, "avatar", "aria"),
+        "audio_trigger": cfg.audio.trigger,
+        "wake_word": cfg.audio.wake_word,
         "wake_sensitivity": cfg.audio.wake_sensitivity,
     }
 
@@ -55,19 +55,19 @@ def _config_to_dict(path: Path) -> dict[str, Any] | None:
 def _default_config_dict() -> dict[str, Any]:
     return {
         "provider": "anthropic",
-        "model":    DEFAULT_MODELS["anthropic"],
-        "hotkey":   "ctrl+shift+space",
+        "model": DEFAULT_MODELS["anthropic"],
+        "hotkey": "ctrl+shift+space",
         "allowed_roots": ["~"],
         "ollama_base_url": None,
-        "user_name":       None,
+        "user_name": None,
         "user_address_as": "none",
-        "user_title":      None,
-        "respond_in":      "auto",
-        "voice":           "piper:en_US-amy-medium",
-        "stt_language":    "auto",
-        "avatar":          "aria",
-        "audio_trigger":   "hotkey",
-        "wake_word":       "hey_jarvis",
+        "user_title": None,
+        "respond_in": "auto",
+        "voice": "piper:en_US-amy-medium",
+        "stt_language": "auto",
+        "avatar": "aria",
+        "audio_trigger": "hotkey",
+        "wake_word": "hey_jarvis",
         "wake_sensitivity": 0.5,
     }
 
@@ -125,8 +125,12 @@ class Bridge:
         cfg["available_models"] = {p: list(m) for p, m in MODELS_BY_PROVIDER.items()}
         cfg["available_voices"] = [
             {
-                "id": v.id, "label": v.label, "language": v.language,
-                "gender": v.gender, "engine": v.engine, "notes": v.notes,
+                "id": v.id,
+                "label": v.label,
+                "language": v.language,
+                "gender": v.gender,
+                "engine": v.engine,
+                "notes": v.notes,
             }
             for v in VOICES
         ]
@@ -181,6 +185,7 @@ class Bridge:
         # Reload .env into the running process so new keys take effect immediately.
         try:
             from dotenv import load_dotenv
+
             load_dotenv(self._env_path, override=True)
         except Exception:
             log.exception("failed to reload .env")
@@ -198,8 +203,12 @@ class Bridge:
         new_cfg["available_models"] = {p: list(m) for p, m in MODELS_BY_PROVIDER.items()}
         new_cfg["available_voices"] = [
             {
-                "id": v.id, "label": v.label, "language": v.language,
-                "gender": v.gender, "engine": v.engine, "notes": v.notes,
+                "id": v.id,
+                "label": v.label,
+                "language": v.language,
+                "gender": v.gender,
+                "engine": v.engine,
+                "notes": v.notes,
             }
             for v in VOICES
         ]

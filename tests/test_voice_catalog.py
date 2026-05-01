@@ -17,8 +17,9 @@ def test_catalog_has_openai_voices():
 
 def test_catalog_has_urdu_via_openai():
     urdu_voices = voices_for(language="ur")
-    assert any(v.engine == "openai" for v in urdu_voices), \
+    assert any(v.engine == "openai" for v in urdu_voices), (
         "OpenAI TTS supports Urdu — at least one Urdu voice expected"
+    )
 
 
 def test_catalog_has_hindi():

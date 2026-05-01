@@ -1,4 +1,5 @@
 """TTS factory: pick engine based on voice id."""
+
 from __future__ import annotations
 
 from voice_assistant.tts.base import Speaker
@@ -21,9 +22,11 @@ def make_speaker(*, voice_id: str) -> Speaker:
     engine, name = voice_id.split(":", 1)
     if engine == "piper":
         from voice_assistant.tts.piper_engine import PiperSpeaker
+
         return PiperSpeaker(voice=name)
     if engine == "openai":
         from voice_assistant.tts.openai_engine import OpenAISpeaker
+
         return OpenAISpeaker(voice=name)
     raise ValueError(f"unknown TTS engine: {engine!r}")
 

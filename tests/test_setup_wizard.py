@@ -60,11 +60,7 @@ def test_render_env_for_each_provider_writes_correct_key():
 
 
 def test_render_env_strips_other_provider_keys():
-    existing = (
-        "ANTHROPIC_API_KEY=old-anthropic-key\n"
-        "OPENAI_API_KEY=old-openai-key\n"
-        "FOO=bar\n"
-    )
+    existing = "ANTHROPIC_API_KEY=old-anthropic-key\nOPENAI_API_KEY=old-openai-key\nFOO=bar\n"
     env = render_env("gemini", "new-gemini-key", existing=existing)
     assert "ANTHROPIC_API_KEY" not in env
     assert "OPENAI_API_KEY" not in env
@@ -159,6 +155,7 @@ def test_cli_setup_flag_runs_wizard(tmp_path, monkeypatch):
     monkeypatch.setattr("sys.argv", ["voice-assistant", "--setup", "--force"])
 
     from voice_assistant.cli import main
+
     main()
 
     assert config_path.exists()

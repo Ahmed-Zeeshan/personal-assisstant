@@ -8,6 +8,7 @@ The openWakeWord Model is NOT imported or constructed at module load time — it
 is imported lazily inside WakeWordListener.start() so that the rest of the
 application starts even if the `wake` extra is not installed.
 """
+
 from __future__ import annotations
 
 import logging
@@ -92,8 +93,11 @@ class WakeWordListener:
             name=f"wake-word-{self._wake_word}",
         )
         self._thread.start()
-        log.info("WakeWordListener started: wake_word=%r sensitivity=%s",
-                 self._wake_word, self._sensitivity)
+        log.info(
+            "WakeWordListener started: wake_word=%r sensitivity=%s",
+            self._wake_word,
+            self._sensitivity,
+        )
 
     def stop(self) -> None:
         """Signal the listener thread to stop and wait for it to exit."""

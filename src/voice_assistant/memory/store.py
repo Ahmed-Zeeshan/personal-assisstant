@@ -6,6 +6,7 @@ sqlite-vec virtual table.
 Embeddings are produced via a callable supplied at construction so the
 store stays unit-testable without network calls.
 """
+
 from __future__ import annotations
 
 import json
@@ -17,6 +18,7 @@ from typing import Any
 
 try:
     import sqlite_vec
+
     _HAS_VEC = True
 except ImportError:
     sqlite_vec = None
@@ -40,6 +42,7 @@ class MemoryStore:
                 self._conn.enable_load_extension(False)
             except Exception as exc:
                 import logging
+
                 logging.getLogger(__name__).warning("sqlite-vec load failed: %s", exc)
         self._init_schema()
 

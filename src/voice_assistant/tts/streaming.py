@@ -5,6 +5,7 @@ chunk into a `StreamingSentenceChunker`. Whenever a sentence completes, it's
 queued for synthesis on a background thread, and the chunker carries on
 buffering the next.
 """
+
 from __future__ import annotations
 
 import logging
@@ -50,7 +51,7 @@ class StreamingSentenceChunker:
                 break
             end = m.end(1)
             sentence = self._buf[:end].strip()
-            self._buf = self._buf[m.end():]
+            self._buf = self._buf[m.end() :]
             if sentence:
                 out.append(sentence)
         return out

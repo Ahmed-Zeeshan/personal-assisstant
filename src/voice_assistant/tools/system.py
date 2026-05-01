@@ -11,7 +11,8 @@ def open_url(url: str) -> ToolResult:
     """Open a URL in the user's default browser. Only http/https allowed."""
     if not (url.startswith("http://") or url.startswith("https://")):
         return ToolResult(
-            ok=False, summary="bad url",
+            ok=False,
+            summary="bad url",
             error="only http/https URLs are allowed",
         )
     ok = webbrowser.open(url)
@@ -42,8 +43,6 @@ def open_app(name: str, *, confirmed: bool = False) -> ToolResult:
         proc = subprocess.Popen(cmd)
         return ToolResult(ok=True, summary=f"launched {name} (pid={proc.pid})")
     except FileNotFoundError:
-        return ToolResult(
-            ok=False, summary="app not found", error=f"no such command: {name}"
-        )
+        return ToolResult(ok=False, summary="app not found", error=f"no such command: {name}")
     except Exception as e:
         return ToolResult(ok=False, summary="launch failed", error=str(e))

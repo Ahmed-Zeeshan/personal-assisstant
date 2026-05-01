@@ -1,4 +1,5 @@
 """Tests for browser tool — mocks the _BrowserSession to avoid real Chromium."""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock

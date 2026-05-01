@@ -13,8 +13,12 @@ def test_registry_includes_filesystem_tools(sandbox: Path):
     reg = build_registry(policy=pol)
     names = {spec.name for spec in reg}
     assert {
-        "create_folder", "create_file", "list_folder",
-        "read_file", "move_path", "delete_path",
+        "create_folder",
+        "create_file",
+        "list_folder",
+        "read_file",
+        "move_path",
+        "delete_path",
     }.issubset(names)
 
 
@@ -73,6 +77,7 @@ def test_delete_path_schema_has_no_default_for_confirmed(sandbox: Path):
 
 def test_registry_includes_send_email_when_credentials_present(sandbox: Path, tmp_path):
     from unittest.mock import MagicMock, patch
+
     pol = SafetyPolicy(
         allowed_roots=[sandbox],
         destructive_requires_confirmation=True,
@@ -88,8 +93,6 @@ def test_registry_includes_send_email_when_credentials_present(sandbox: Path, tm
     fake_service = MagicMock()
     fake_send = fake_service.users.return_value.messages.return_value.send
     fake_send.return_value.execute.return_value = {"id": "xyz"}
-    with patch(
-        "voice_assistant.tools.gmail._build_service", return_value=fake_service
-    ):
+    with patch("voice_assistant.tools.gmail._build_service", return_value=fake_service):
         r = send.func(to="alice@example.com", subject="hi", body="hi")
     assert r.ok

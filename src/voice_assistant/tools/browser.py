@@ -7,6 +7,7 @@ persist).
 Public API is sync; Playwright's async loop is hidden behind a worker
 thread + asyncio.run_coroutine_threadsafe.
 """
+
 from __future__ import annotations
 
 import asyncio

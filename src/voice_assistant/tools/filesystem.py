@@ -16,6 +16,7 @@ _F = TypeVar("_F", bound=Callable[..., ToolResult])
 
 def _wrap(fn: _F) -> _F:
     """Convert SafetyError, OSError, and ValidationError to ToolResult(ok=False)."""
+
     @functools.wraps(fn)
     def inner(*args: Any, **kwargs: Any) -> ToolResult:
         try:
@@ -26,6 +27,7 @@ def _wrap(fn: _F) -> _F:
             return ToolResult(ok=False, summary="filesystem error", error=str(e))
         except ValidationError as e:
             return ToolResult(ok=False, summary="bad result construction", error=str(e))
+
     return inner  # type: ignore[return-value]
 
 
@@ -59,9 +61,7 @@ def list_folder(path: str, *, policy: SafetyPolicy) -> ToolResult:
     p = Path(path).expanduser()
     policy.check_path(p)
     if not p.is_dir():
-        return ToolResult(
-            ok=False, summary="not a folder", error=f"not a directory: {p}"
-        )
+        return ToolResult(ok=False, summary="not a folder", error=f"not a directory: {p}")
     entries = sorted([e.name for e in p.iterdir()])
     return ToolResult(
         ok=True,
@@ -71,9 +71,7 @@ def list_folder(path: str, *, policy: SafetyPolicy) -> ToolResult:
 
 
 @_wrap
-def read_file(
-    path: str, *, policy: SafetyPolicy, max_bytes: int = 64_000
-) -> ToolResult:
+def read_file(path: str, *, policy: SafetyPolicy, max_bytes: int = 64_000) -> ToolResult:
     """Read a text file, truncated to max_bytes (operates on a byte budget)."""
     p = Path(path).expanduser()
     policy.check_path(p)
@@ -83,16 +81,13 @@ def read_file(
     text = head.decode("utf-8", errors="replace")
     return ToolResult(
         ok=True,
-        summary=f"read {len(head)} bytes from {p}"
-        + (" (truncated)" if truncated else ""),
+        summary=f"read {len(head)} bytes from {p}" + (" (truncated)" if truncated else ""),
         data={"content": text, "bytes_read": len(head), "truncated": truncated},
     )
 
 
 @_wrap
-def move_path(
-    src: str, dst: str, *, policy: SafetyPolicy, confirmed: bool = False
-) -> ToolResult:
+def move_path(src: str, dst: str, *, policy: SafetyPolicy, confirmed: bool = False) -> ToolResult:
     """Move or rename a file/folder. Requires confirmed=True if dst exists or is a directory shutil would merge into."""
     s = Path(src).expanduser()
     d = Path(dst).expanduser()
@@ -110,9 +105,7 @@ def move_path(
 
 
 @_wrap
-def delete_path(
-    path: str, *, policy: SafetyPolicy, confirmed: bool = False
-) -> ToolResult:
+def delete_path(path: str, *, policy: SafetyPolicy, confirmed: bool = False) -> ToolResult:
     """Delete a file or folder (recursive). Always requires confirmed=True.
 
     The rate-limit slot is consumed only after the existence check passes

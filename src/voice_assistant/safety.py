@@ -11,6 +11,7 @@ exploitable without local concurrent write access. If this code ever
 moves to a multi-user or cloud environment, revisit and either hold an
 fd from check time, or use openat()-style relative resolution.
 """
+
 from __future__ import annotations
 
 import time
@@ -30,9 +31,7 @@ class SafetyPolicy:
         delete_rate_per_minute: int,
     ) -> None:
         if delete_rate_per_minute < 0:
-            raise ValueError(
-                f"delete_rate_per_minute must be >= 0, got {delete_rate_per_minute}"
-            )
+            raise ValueError(f"delete_rate_per_minute must be >= 0, got {delete_rate_per_minute}")
         # Stored as a tuple so callers cannot mutate the policy after construction.
         self._allowed_roots: tuple[Path, ...] = tuple(
             Path(r).expanduser().resolve() for r in allowed_roots
@@ -57,16 +56,12 @@ class SafetyPolicy:
                 return
             except ValueError:
                 continue
-        raise SafetyError(
-            f"path outside allowed roots: {resolved}"
-        )
+        raise SafetyError(f"path outside allowed roots: {resolved}")
 
     def check_destructive(self, path: Path, confirmed: bool) -> None:
         self.check_path(path)
         if self.destructive_requires_confirmation and not confirmed:
-            raise SafetyError(
-                f"destructive op on {path} requires confirmed=True"
-            )
+            raise SafetyError(f"destructive op on {path} requires confirmed=True")
 
     def record_delete(self) -> None:
         # Monotonic clock — not affected by NTP adjustments or wall-clock jumps.
@@ -75,7 +70,5 @@ class SafetyPolicy:
         while self._delete_times and self._delete_times[0] < cutoff:
             self._delete_times.popleft()
         if len(self._delete_times) >= self.delete_rate_per_minute:
-            raise SafetyError(
-                f"delete rate limit exceeded ({self.delete_rate_per_minute}/min)"
-            )
+            raise SafetyError(f"delete rate limit exceeded ({self.delete_rate_per_minute}/min)")
         self._delete_times.append(now)

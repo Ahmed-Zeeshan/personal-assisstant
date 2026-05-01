@@ -72,6 +72,7 @@ def test_tool_raising_unexpected_exception_propagates(sandbox):
     """Orchestrator's narrow except is intentional; CLI catches at the loop level."""
     from voice_assistant.app import Orchestrator
     from voice_assistant.tools.schema import ToolSpec
+
     brain = MagicMock()
 
     def buggy_tool(**kwargs):
@@ -119,4 +120,5 @@ logging: { level: INFO, file: /tmp/x.log }
     monkeypatch.setattr("sys.argv", ["voice-assistant", "--config", str(config_path), "--no-gui"])
     monkeypatch.setattr("builtins.input", lambda *_: (_ for _ in ()).throw(EOFError()))
     from voice_assistant.cli import main
+
     main()  # exits cleanly on EOF

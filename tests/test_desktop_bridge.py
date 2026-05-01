@@ -47,14 +47,16 @@ def test_bridge_get_config_returns_default_shape_when_missing(bridge_with_config
 def test_bridge_save_config_writes_files_and_strips_stale_keys(bridge_with_config):
     bridge, _, _, cfg_path, env_path = bridge_with_config
     env_path.write_text("ANTHROPIC_API_KEY=old\nFOO=bar\n")
-    result = bridge.save_config({
-        "provider": "openai",
-        "model": "gpt-4o",
-        "hotkey": "ctrl+shift+space",
-        "allowed_roots": ["~"],
-        "ollama_base_url": None,
-        "_secret": "sk-new",
-    })
+    result = bridge.save_config(
+        {
+            "provider": "openai",
+            "model": "gpt-4o",
+            "hotkey": "ctrl+shift+space",
+            "allowed_roots": ["~"],
+            "ollama_base_url": None,
+            "_secret": "sk-new",
+        }
+    )
     assert result == {"ok": True}
     assert cfg_path.exists()
     env_text = env_path.read_text()
@@ -65,14 +67,16 @@ def test_bridge_save_config_writes_files_and_strips_stale_keys(bridge_with_confi
 
 def test_bridge_save_config_validation_failure_returns_errors(bridge_with_config):
     bridge, _, _, cfg_path, _ = bridge_with_config
-    result = bridge.save_config({
-        "provider": "nonexistent",
-        "model": "x",
-        "hotkey": "x",
-        "allowed_roots": ["~"],
-        "ollama_base_url": None,
-        "_secret": "k",
-    })
+    result = bridge.save_config(
+        {
+            "provider": "nonexistent",
+            "model": "x",
+            "hotkey": "x",
+            "allowed_roots": ["~"],
+            "ollama_base_url": None,
+            "_secret": "k",
+        }
+    )
     assert result["ok"] is False
     assert isinstance(result["errors"], list) and result["errors"]
     assert not cfg_path.exists()
@@ -82,14 +86,16 @@ def test_bridge_save_config_emits_config_event(bridge_with_config):
     bridge, bus, _, _, _ = bridge_with_config
     seen: list[dict] = []
     bus.subscribe(lambda e: seen.append(e) if e.get("type") == "config" else None)
-    bridge.save_config({
-        "provider": "anthropic",
-        "model": "claude-sonnet-4-6",
-        "hotkey": "ctrl+shift+space",
-        "allowed_roots": ["~"],
-        "ollama_base_url": None,
-        "_secret": "sk-ant-test",
-    })
+    bridge.save_config(
+        {
+            "provider": "anthropic",
+            "model": "claude-sonnet-4-6",
+            "hotkey": "ctrl+shift+space",
+            "allowed_roots": ["~"],
+            "ollama_base_url": None,
+            "_secret": "sk-ant-test",
+        }
+    )
     assert len(seen) == 1
     assert seen[0]["cfg"]["provider"] == "anthropic"
 
@@ -97,18 +103,20 @@ def test_bridge_save_config_emits_config_event(bridge_with_config):
 def test_bridge_save_config_persists_voice_avatar_stt(bridge_with_config):
     """voice/avatar/stt_language must round-trip through save_config → get_config."""
     bridge, _, _, _cfg_path, _ = bridge_with_config
-    bridge.save_config({
-        "provider": "anthropic",
-        "model": "claude-sonnet-4-6",
-        "hotkey": "ctrl+shift+space",
-        "allowed_roots": ["~"],
-        "ollama_base_url": None,
-        "_secret": "sk-ant-test",
-        "voice": "openai:nova",
-        "stt_language": "ur",
-        "avatar": "liam",
-        "respond_in": "ur",
-    })
+    bridge.save_config(
+        {
+            "provider": "anthropic",
+            "model": "claude-sonnet-4-6",
+            "hotkey": "ctrl+shift+space",
+            "allowed_roots": ["~"],
+            "ollama_base_url": None,
+            "_secret": "sk-ant-test",
+            "voice": "openai:nova",
+            "stt_language": "ur",
+            "avatar": "liam",
+            "respond_in": "ur",
+        }
+    )
     result = bridge.get_config()
     assert result["voice"] == "openai:nova"
     assert result["stt_language"] == "ur"
@@ -118,17 +126,19 @@ def test_bridge_save_config_persists_voice_avatar_stt(bridge_with_config):
 
 def test_bridge_save_config_persists_wake_word_fields(bridge_with_config):
     bridge, _, _, _cfg_path, _ = bridge_with_config
-    bridge.save_config({
-        "provider": "anthropic",
-        "model": "claude-sonnet-4-6",
-        "hotkey": "ctrl+shift+space",
-        "allowed_roots": ["~"],
-        "ollama_base_url": None,
-        "_secret": "sk-ant-test",
-        "audio_trigger": "wake_word",
-        "wake_word": "alexa",
-        "wake_sensitivity": 0.8,
-    })
+    bridge.save_config(
+        {
+            "provider": "anthropic",
+            "model": "claude-sonnet-4-6",
+            "hotkey": "ctrl+shift+space",
+            "allowed_roots": ["~"],
+            "ollama_base_url": None,
+            "_secret": "sk-ant-test",
+            "audio_trigger": "wake_word",
+            "wake_word": "alexa",
+            "wake_sensitivity": 0.8,
+        }
+    )
     result = bridge.get_config()
     assert result["audio_trigger"] == "wake_word"
     assert result["wake_word"] == "alexa"
@@ -139,12 +149,14 @@ def test_bridge_env_file_is_mode_0600(bridge_with_config):
     if os.name == "nt":
         pytest.skip("file modes are POSIX-only")
     bridge, _, _, _, env_path = bridge_with_config
-    bridge.save_config({
-        "provider": "anthropic",
-        "model": "claude-sonnet-4-6",
-        "hotkey": "ctrl+shift+space",
-        "allowed_roots": ["~"],
-        "ollama_base_url": None,
-        "_secret": "sk-ant-test",
-    })
+    bridge.save_config(
+        {
+            "provider": "anthropic",
+            "model": "claude-sonnet-4-6",
+            "hotkey": "ctrl+shift+space",
+            "allowed_roots": ["~"],
+            "ollama_base_url": None,
+            "_secret": "sk-ant-test",
+        }
+    )
     assert oct(env_path.stat().st_mode & 0o777) == "0o600"

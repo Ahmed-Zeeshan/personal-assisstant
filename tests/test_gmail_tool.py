@@ -15,9 +15,7 @@ def test_send_email_calls_gmail_api_with_correct_payload(tmp_path):
     fake_send = fake_service.users.return_value.messages.return_value.send
     fake_send.return_value.execute.return_value = {"id": "abc123"}
 
-    with patch(
-        "voice_assistant.tools.gmail._build_service", return_value=fake_service
-    ):
+    with patch("voice_assistant.tools.gmail._build_service", return_value=fake_service):
         r = send_email(
             to="alice@example.com",
             subject="hi there",
@@ -37,9 +35,7 @@ def test_send_email_calls_gmail_api_with_correct_payload(tmp_path):
 def test_send_email_strips_whitespace_recipient(tmp_path):
     creds_path = tmp_path / "creds.json"
     creds_path.write_text("{}")
-    r = send_email(
-        to="   ", subject="hi", body="x", credentials_file=str(creds_path)
-    )
+    r = send_email(to="   ", subject="hi", body="x", credentials_file=str(creds_path))
     assert not r.ok
     assert "recipient" in (r.error or "").lower()
 
@@ -47,9 +43,7 @@ def test_send_email_strips_whitespace_recipient(tmp_path):
 def test_send_email_rejects_empty_to(tmp_path):
     creds_path = tmp_path / "creds.json"
     creds_path.write_text("{}")
-    r = send_email(
-        to="", subject="hi", body="x", credentials_file=str(creds_path)
-    )
+    r = send_email(to="", subject="hi", body="x", credentials_file=str(creds_path))
     assert not r.ok
     assert "recipient" in (r.error or "").lower()
 
@@ -63,7 +57,8 @@ def test_send_email_normalises_error_string(tmp_path):
     ):
         r = send_email(
             to="alice@example.com",
-            subject="x", body="y",
+            subject="x",
+            body="y",
             credentials_file=str(creds_path),
         )
     assert not r.ok

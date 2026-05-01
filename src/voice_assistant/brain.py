@@ -121,9 +121,7 @@ class Brain:
         history: list[Message],
         tools: list[ToolSpec],
     ) -> BrainResponse:
-        messages: list[dict[str, Any]] = [
-            {"role": "system", "content": self._get_system_prompt()}
-        ]
+        messages: list[dict[str, Any]] = [{"role": "system", "content": self._get_system_prompt()}]
         for m in history:
             entry: dict[str, Any] = {"role": m.role, "content": m.content}
             if m.tool_call_id is not None:
@@ -143,8 +141,9 @@ class Brain:
             kwargs["tools"] = [t.to_openai_format() for t in tools]
             kwargs["tool_choice"] = self.tool_choice
 
-        log.debug("brain call: %s, %d msgs, %d tools",
-                  self._qualified_model(), len(messages), len(tools))
+        log.debug(
+            "brain call: %s, %d msgs, %d tools", self._qualified_model(), len(messages), len(tools)
+        )
         resp = completion(**kwargs)
         msg = resp.choices[0].message
 
@@ -161,9 +160,7 @@ class Brain:
                 args = json.loads(tc.function.arguments or "{}")
             except json.JSONDecodeError as e:
                 log.warning("brain emitted malformed tool_call args: %s", e)
-                return PlainText(
-                    content=f"[brain error: malformed tool arguments: {e}]"
-                )
+                return PlainText(content=f"[brain error: malformed tool arguments: {e}]")
             return ToolCall(id=tc.id, name=tc.function.name, arguments=args)
 
         return PlainText(content=msg.content or "")
@@ -193,11 +190,16 @@ class Brain:
         """
         full_messages = list(messages)
         if not full_messages or full_messages[0].get("role") != "system":
-            full_messages = [{"role": "system", "content": self._get_system_prompt()}, *full_messages]
+            full_messages = [
+                {"role": "system", "content": self._get_system_prompt()},
+                *full_messages,
+            ]
 
         tool_schemas = None
         if tools:
-            tool_schemas = [t.to_openai_format() if hasattr(t, "to_openai_format") else t for t in tools]
+            tool_schemas = [
+                t.to_openai_format() if hasattr(t, "to_openai_format") else t for t in tools
+            ]
 
         response = self._start_stream(full_messages, tool_schemas)
 
@@ -208,7 +210,7 @@ class Brain:
             delta = chunk.choices[0].delta
             if getattr(delta, "content", None):
                 yield ContentChunk(text=delta.content)
-            for tc in (getattr(delta, "tool_calls", None) or []):
+            for tc in getattr(delta, "tool_calls", None) or []:
                 idx = tc.index
                 slot = pending.setdefault(idx, {"id": None, "name": None, "args": ""})
                 if tc.id:

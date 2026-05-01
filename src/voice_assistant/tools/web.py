@@ -1,4 +1,5 @@
 """Web tools: search the web, fetch page content. Network-only — no path scoping needed."""
+
 from __future__ import annotations
 
 from urllib.parse import urlparse
@@ -25,17 +26,21 @@ def web_search(*, query: str, count: int = 5) -> list[dict[str, str]]:
     Uses DuckDuckGo via duckduckgo-search. count is capped at 10.
     """
     if DDGS is None:
-        raise ImportError("duckduckgo-search is not installed. Install with: pip install duckduckgo-search")
+        raise ImportError(
+            "duckduckgo-search is not installed. Install with: pip install duckduckgo-search"
+        )
     n = max(1, min(int(count), 10))
     with DDGS() as d:
         raw = d.text(query, max_results=n)
     out: list[dict[str, str]] = []
     for r in raw or []:
-        out.append({
-            "title":   str(r.get("title", "")),
-            "url":     str(r.get("href", "")),
-            "snippet": str(r.get("body", "")),
-        })
+        out.append(
+            {
+                "title": str(r.get("title", "")),
+                "url": str(r.get("href", "")),
+                "snippet": str(r.get("body", "")),
+            }
+        )
     return out
 
 
@@ -50,8 +55,9 @@ def web_fetch(*, url: str, max_chars: int = 8000) -> dict[str, str]:
         raise ValueError(f"web_fetch only supports http(s); got {parsed.scheme!r}")
     if not parsed.netloc:
         raise ValueError(f"web_fetch needs a hostname; got {url!r}")
-    response = httpx.get(url, follow_redirects=True, timeout=15.0,
-                         headers={"User-Agent": "voice-assistant/0.1"})
+    response = httpx.get(
+        url, follow_redirects=True, timeout=15.0, headers={"User-Agent": "voice-assistant/0.1"}
+    )
     response.raise_for_status()
     html = response.text
     text = trafilatura.extract(html, include_comments=False, include_tables=False) or ""
@@ -71,7 +77,11 @@ WEB_SEARCH_SCHEMA = {
             "type": "object",
             "properties": {
                 "query": {"type": "string", "description": "Search query."},
-                "count": {"type": "integer", "description": "Number of results (1-10, default 5).", "default": 5},
+                "count": {
+                    "type": "integer",
+                    "description": "Number of results (1-10, default 5).",
+                    "default": 5,
+                },
             },
             "required": ["query"],
             "additionalProperties": False,
@@ -88,7 +98,11 @@ WEB_FETCH_SCHEMA = {
             "type": "object",
             "properties": {
                 "url": {"type": "string", "description": "Absolute http(s) URL."},
-                "max_chars": {"type": "integer", "description": "Truncate text to this many characters (default 8000).", "default": 8000},
+                "max_chars": {
+                    "type": "integer",
+                    "description": "Truncate text to this many characters (default 8000).",
+                    "default": 8000,
+                },
             },
             "required": ["url"],
             "additionalProperties": False,

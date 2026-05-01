@@ -32,7 +32,7 @@ class ToolResult(BaseModel):
 class ToolSpec:
     name: str
     description: str
-    parameters: dict[str, Any]   # JSON schema
+    parameters: dict[str, Any]  # JSON schema
     func: Callable[..., ToolResult]
 
     def to_openai_format(self) -> dict[str, Any]:

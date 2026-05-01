@@ -1,4 +1,5 @@
 """Append-only JSONL conversation history."""
+
 from __future__ import annotations
 
 import json

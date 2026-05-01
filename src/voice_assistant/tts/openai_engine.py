@@ -2,6 +2,7 @@
 
 Streams audio bytes from the OpenAI API and plays via sounddevice.
 """
+
 from __future__ import annotations
 
 import io

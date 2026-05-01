@@ -4,6 +4,7 @@ Inputs are required to be mono float32 PCM samples in [-1, 1] at 16 kHz.
 This contract is enforced at the AudioBuffer boundary so silent
 miscompiled audio cannot reach the model.
 """
+
 from __future__ import annotations
 
 import logging
@@ -26,9 +27,7 @@ class Transcriber:
         self.language = language
         compute_type = "int8" if device == "cpu" else "float16"
         try:
-            self.model = WhisperModel(
-                model_name, device=device, compute_type=compute_type
-            )
+            self.model = WhisperModel(model_name, device=device, compute_type=compute_type)
         except Exception as exc:
             raise RuntimeError(
                 f"Failed to load WhisperModel '{model_name}' on device "
@@ -37,22 +36,14 @@ class Transcriber:
 
     def transcribe(self, audio: AudioBuffer) -> str:
         if audio.sample_rate != 16000:
-            raise ValueError(
-                f"expected 16kHz audio, got {audio.sample_rate}"
-            )
+            raise ValueError(f"expected 16kHz audio, got {audio.sample_rate}")
         if audio.samples.ndim != 1:
-            raise ValueError(
-                f"expected mono (1-D) audio, got shape {audio.samples.shape}"
-            )
+            raise ValueError(f"expected mono (1-D) audio, got shape {audio.samples.shape}")
         if audio.samples.dtype != np.float32:
-            raise ValueError(
-                f"expected float32 samples, got {audio.samples.dtype}"
-            )
+            raise ValueError(f"expected float32 samples, got {audio.samples.dtype}")
         if audio.samples.size == 0:
             return ""
-        segments, info = self.model.transcribe(
-            audio.samples, language=self.language
-        )
+        segments, info = self.model.transcribe(audio.samples, language=self.language)
         log.debug(
             "stt: language_probability=%.3f duration=%.2fs",
             getattr(info, "language_probability", 0.0),

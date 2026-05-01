@@ -1,0 +1,94 @@
+name: Release
+
+# Triggers ONLY on version tags (v*). Committing this file does not trigger a run.
+# Unsigned builds for now — code-signing is covered by Item 6.
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: voice-assistant-${{ github.ref_name }}-linux-x64.tar.gz
+            archive_cmd: tar -czf
+            archive_ext: .tar.gz
+          - os: macos-latest
+            artifact_name: voice-assistant-${{ github.ref_name }}-macos-arm64.tar.gz
+            archive_cmd: tar -czf
+            archive_ext: .tar.gz
+          - os: windows-latest
+            artifact_name: voice-assistant-${{ github.ref_name }}-windows-x64.zip
+            archive_cmd: Compress-Archive -Path
+            archive_ext: .zip
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Node + web build ───────────────────────────────────────────────────
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'web/package-lock.json'
+
+      - name: Build web bundle
+        run: cd web && npm ci && npm run build
+
+      # ── Python + PyInstaller ───────────────────────────────────────────────
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Python deps + PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -e ".[gmail,web,desktop]"
+
+      # ── PyInstaller one-folder build ───────────────────────────────────────
+      - name: Build binary (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          pyinstaller \
+            --name voice-assistant \
+            --onedir \
+            --collect-data voice_assistant \
+            src/voice_assistant/cli.py
+
+      - name: Build binary (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          pyinstaller `
+            --name voice-assistant `
+            --onedir `
+            --collect-data voice_assistant `
+            src/voice_assistant/cli.py
+
+      # ── Archive ───────────────────────────────────────────────────────────
+      - name: Archive distribution (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          OUTDIR="dist/voice-assistant"
+          tar -czf "${{ matrix.artifact_name }}" -C dist voice-assistant
+
+      - name: Archive distribution (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path dist\voice-assistant -DestinationPath "${{ matrix.artifact_name }}"
+
+      # ── Upload to GitHub Release ──────────────────────────────────────────
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

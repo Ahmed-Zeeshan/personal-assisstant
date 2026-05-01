@@ -51,6 +51,23 @@ export class Settings {
           <input data-field="roots" class="w-full h-10 px-3 rounded-md border border-border bg-bg text-fg" placeholder="~" />
         </div>
         <div class="border-t border-border pt-5 space-y-3">
+          <h3 class="font-medium text-fg">Voice &amp; Avatar</h3>
+          <div>
+            <label class="block text-muted mb-1">Avatar</label>
+            <div data-field="avatar" class="grid grid-cols-3 gap-2"></div>
+          </div>
+          <div>
+            <label class="block text-muted mb-1">Voice</label>
+            <select data-field="voice" class="w-full h-10 px-3 rounded-md border border-border bg-bg text-fg"></select>
+            <button type="button" data-test-voice
+              class="mt-2 text-xs text-accent hover:underline">&#9654; Test this voice</button>
+          </div>
+          <div>
+            <label class="block text-muted mb-1">Speech recognition language</label>
+            <select data-field="stt_language" class="w-full h-10 px-3 rounded-md border border-border bg-bg text-fg"></select>
+          </div>
+        </div>
+        <div class="border-t border-border pt-5 space-y-3">
           <h3 class="font-medium text-fg">Identity</h3>
           <div>
             <label class="block text-muted mb-1">Your name</label>
@@ -135,6 +152,72 @@ export class Settings {
     this.refreshModelOptions();
     this.refreshSecretFields();
     this.refreshTitleRow();
+    this.refreshVoiceSection();
+  }
+
+  private refreshVoiceSection(): void {
+    // Avatars
+    const avatars = this.currentCfg?.available_avatars ?? ['aria', 'liam', 'sage'];
+    const grid = this.el.querySelector<HTMLElement>('[data-field="avatar"]')!;
+    grid.innerHTML = '';
+    for (const name of avatars) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'rounded-md border-2 border-border p-2 hover:border-accent transition-colors';
+      btn.dataset.avatar = name;
+      btn.setAttribute('aria-pressed', String(name === (this.currentCfg?.avatar ?? 'aria')));
+      if (name === (this.currentCfg?.avatar ?? 'aria')) btn.classList.add('border-accent');
+      btn.innerHTML = `<img src="/avatars/${name}.svg" alt="${name}" class="h-16 w-16 mx-auto rounded-full" />
+        <p class="mt-1 text-xs capitalize text-center">${name}</p>`;
+      btn.addEventListener('click', () => {
+        grid.querySelectorAll('button').forEach(b => {
+          b.setAttribute('aria-pressed', 'false');
+          b.classList.remove('border-accent');
+          b.classList.add('border-border');
+        });
+        btn.setAttribute('aria-pressed', 'true');
+        btn.classList.remove('border-border');
+        btn.classList.add('border-accent');
+      });
+      grid.appendChild(btn);
+    }
+
+    // Voices grouped by language (English first, then alphabetical)
+    const voices = this.currentCfg?.available_voices ?? [];
+    const select = this.el.querySelector<HTMLSelectElement>('[data-field="voice"]')!;
+    select.innerHTML = '';
+    const byLang: Record<string, typeof voices> = {};
+    for (const v of voices) { (byLang[v.language] ??= []).push(v); }
+    const langOrder = Object.keys(byLang).sort((a, b) =>
+      a === 'en' ? -1 : b === 'en' ? 1 : a.localeCompare(b)
+    );
+    for (const lang of langOrder) {
+      const og = document.createElement('optgroup');
+      // Extract language label from first voice's parenthetical, or fallback to code
+      const firstLabel = byLang[lang][0].label;
+      const match = firstLabel.match(/\(([^)]+)\)/);
+      og.label = match ? match[1] : (lang === 'en' ? 'English' : lang);
+      for (const v of byLang[lang]) {
+        const opt = document.createElement('option');
+        opt.value = v.id;
+        opt.textContent = v.notes ? `${v.label} · ${v.notes}` : v.label;
+        og.appendChild(opt);
+      }
+      select.appendChild(og);
+    }
+    if (this.currentCfg?.voice) select.value = this.currentCfg.voice;
+
+    // STT languages
+    const sttLangs = this.currentCfg?.available_stt_languages ?? [];
+    const sttSelect = this.el.querySelector<HTMLSelectElement>('[data-field="stt_language"]')!;
+    sttSelect.innerHTML = '';
+    for (const l of sttLangs) {
+      const opt = document.createElement('option');
+      opt.value = l.code;
+      opt.textContent = l.label;
+      sttSelect.appendChild(opt);
+    }
+    if (this.currentCfg?.stt_language) sttSelect.value = this.currentCfg.stt_language;
   }
 
   private refreshTitleRow(): void {

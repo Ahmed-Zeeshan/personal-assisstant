@@ -17,6 +17,7 @@ from voice_assistant.setup_wizard import (
     render_config,
     render_env,
 )
+from voice_assistant.voice_catalog import VOICES, STT_LANGUAGES
 
 if TYPE_CHECKING:
     from voice_assistant.history import History
@@ -41,6 +42,9 @@ def _config_to_dict(path: Path) -> dict[str, Any] | None:
         "user_name":       cfg.user.name,
         "user_address_as": cfg.user.address_as,
         "user_title":      cfg.user.title,
+        "voice":           cfg.tts.voice,
+        "stt_language":    cfg.stt.language,
+        "avatar":          getattr(cfg, "avatar", "aria"),
     }
 
 
@@ -54,6 +58,9 @@ def _default_config_dict() -> dict[str, Any]:
         "user_name":       None,
         "user_address_as": "none",
         "user_title":      None,
+        "voice":           "piper:en_US-amy-medium",
+        "stt_language":    "auto",
+        "avatar":          "aria",
     }
 
 
@@ -108,6 +115,15 @@ class Bridge:
         cfg = _config_to_dict(self._config_path) or _default_config_dict()
         cfg["has_secret"] = _has_secret_for(cfg["provider"], self._env_path)
         cfg["available_models"] = {p: list(m) for p, m in MODELS_BY_PROVIDER.items()}
+        cfg["available_voices"] = [
+            {
+                "id": v.id, "label": v.label, "language": v.language,
+                "gender": v.gender, "engine": v.engine, "notes": v.notes,
+            }
+            for v in VOICES
+        ]
+        cfg["available_stt_languages"] = [{"code": c, "label": lbl} for c, lbl in STT_LANGUAGES]
+        cfg["available_avatars"] = ["aria", "liam", "sage"]
         return cfg
 
     def save_config(self, cfg: dict[str, Any]) -> dict[str, Any]:
@@ -125,6 +141,9 @@ class Bridge:
                 user_name=cfg.get("user_name") or None,
                 user_address_as=cfg.get("user_address_as") or "none",
                 user_title=cfg.get("user_title") or None,
+                voice=cfg.get("voice") or "piper:en_US-amy-medium",
+                stt_language=cfg.get("stt_language") or "auto",
+                avatar=cfg.get("avatar") or "aria",
             )
             yaml_text = render_config(answers)
             Config.model_validate(yaml.safe_load(yaml_text))  # validation
@@ -165,6 +184,15 @@ class Bridge:
         new_cfg = _config_to_dict(self._config_path) or _default_config_dict()
         new_cfg["has_secret"] = _has_secret_for(new_cfg["provider"], self._env_path)
         new_cfg["available_models"] = {p: list(m) for p, m in MODELS_BY_PROVIDER.items()}
+        new_cfg["available_voices"] = [
+            {
+                "id": v.id, "label": v.label, "language": v.language,
+                "gender": v.gender, "engine": v.engine, "notes": v.notes,
+            }
+            for v in VOICES
+        ]
+        new_cfg["available_stt_languages"] = [{"code": c, "label": lbl} for c, lbl in STT_LANGUAGES]
+        new_cfg["available_avatars"] = ["aria", "liam", "sage"]
         self._bus.publish({"type": "config", "cfg": new_cfg})
         return {"ok": True}
 

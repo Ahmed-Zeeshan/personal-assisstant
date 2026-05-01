@@ -344,7 +344,11 @@ def build_registry(
         from voice_assistant.tools.whatsapp import (
             WHATSAPP_CONTACT_SCHEMA,
             WHATSAPP_SCHEMA,
+        )
+        from voice_assistant.tools.whatsapp import (
             send_whatsapp_message as _wa_fn,
+        )
+        from voice_assistant.tools.whatsapp import (
             send_whatsapp_to_contact as _wa_contact_fn,
         )
 

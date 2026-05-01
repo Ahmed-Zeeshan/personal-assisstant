@@ -4,7 +4,7 @@ from __future__ import annotations
 import locale as _locale
 import platform
 import socket
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -12,7 +12,8 @@ from typing import Any
 def get_system_info() -> dict[str, Any]:
     """Return basic info about the machine the assistant is running on."""
     try:
-        tz_name = datetime.now().astimezone().tzinfo.tzname(None) or "UTC"
+        tzinfo = datetime.now().astimezone().tzinfo
+        tz_name = (tzinfo.tzname(None) if tzinfo is not None else None) or "UTC"
     except Exception:
         tz_name = "UTC"
     try:
@@ -26,7 +27,7 @@ def get_system_info() -> dict[str, Any]:
         "machine_arch": platform.machine(),
         "hostname": socket.gethostname(),
         "user_home": str(Path.home()),
-        "current_time_iso": datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
+        "current_time_iso": datetime.now(UTC).astimezone().isoformat(timespec="seconds"),
         "timezone": tz_name,
         "locale": loc or "C",
         "python_version": platform.python_version(),

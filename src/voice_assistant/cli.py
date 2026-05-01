@@ -155,7 +155,12 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
             try:
                 import numpy as np
 
-                silence = np.zeros(16000, dtype=np.float32).tobytes()
+                from voice_assistant.audio_types import AudioBuffer
+
+                silence = AudioBuffer(
+                    samples=np.zeros(16000, dtype=np.float32),
+                    sample_rate=16000,
+                )
                 transcriber.transcribe(silence)
                 log.info("STT pre-warmed")
             except Exception as exc:

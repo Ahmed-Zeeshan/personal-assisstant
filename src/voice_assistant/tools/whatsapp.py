@@ -150,7 +150,7 @@ def send_whatsapp_to_contact(*, name: str, message: str) -> dict[str, Any]:
             sess.type_text(sel, name)
             searched = True
             break
-        except Exception:
+        except Exception:  # noqa: S112
             continue
     if not searched:
         raise RuntimeError("couldn't find WhatsApp Web search box")
@@ -172,7 +172,7 @@ def send_whatsapp_to_contact(*, name: str, message: str) -> dict[str, Any]:
         try:
             sess.click(sel)
             break
-        except Exception:
+        except Exception:  # noqa: S112
             continue
 
     # Click compose box and type
@@ -188,7 +188,7 @@ def send_whatsapp_to_contact(*, name: str, message: str) -> dict[str, Any]:
             sess.type_text(sel, message)
             typed = True
             break
-        except Exception:
+        except Exception:  # noqa: S112
             continue
     if not typed:
         raise RuntimeError("couldn't find WhatsApp Web message composer")
@@ -199,7 +199,7 @@ def send_whatsapp_to_contact(*, name: str, message: str) -> dict[str, Any]:
             sess.click(sel)
             _recent_sends.append(time.time())
             return {"ok": True, "contact": name}
-        except Exception:
+        except Exception:  # noqa: S112
             continue
     try:
         sess.keyboard_press("Enter")

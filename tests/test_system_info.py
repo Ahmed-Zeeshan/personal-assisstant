@@ -5,7 +5,6 @@ import socket
 
 from voice_assistant.tools.system_info import get_system_info, system_context_block
 
-
 EXPECTED_KEYS = {
     "os",
     "os_release",

@@ -143,10 +143,33 @@ the closest match automatically.
 
 ### Browser & WhatsApp
 
-The `[browser]` extra launches a persistent Chromium profile at
+The `[browser]` extra can work in two modes:
+
+**Default — isolated Chromium (no setup required)**
+
+Launches its own Chromium with a persistent profile at
 `~/.voice-assistant/browser-profile/`. Cookies and logins persist between
 calls. WhatsApp Web requires a one-time QR-code scan from your phone; after
 that, `send_whatsapp_message` is fully automatic.
+
+**Attached to your existing Chrome (recommended for WhatsApp)**
+
+If you launch Chrome with `--remote-debugging-port=9222`, the assistant
+detects this automatically and attaches to your running browser via the
+Chrome DevTools Protocol (CDP). Your real tabs — including any already-open
+`web.whatsapp.com` tab — are reused, so no QR-code scan is needed.
+
+```bash
+# Linux / macOS
+google-chrome --remote-debugging-port=9222
+# or for Chromium:
+chromium --remote-debugging-port=9222
+```
+
+You can also set `VA_CHROME_CDP_PORT=<port>` to override the default 9222.
+
+If Chrome is not reachable on the configured port, the assistant silently
+falls back to its own isolated browser — no error, no configuration required.
 
 ## Conversation history
 

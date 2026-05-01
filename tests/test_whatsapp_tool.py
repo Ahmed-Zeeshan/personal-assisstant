@@ -167,10 +167,20 @@ def _make_contact_session(
     click_raises: bool = False,
     type_text_raises: bool = False,
     evaluate_return: list | None = None,
+    cdp_connected: bool = False,
+    existing_tab: bool = False,
 ) -> MagicMock:
     """Mock session for contact-based WhatsApp sends."""
     sess = MagicMock()
+    # find_or_open_page replaces the old direct goto() call.
+    sess.find_or_open_page.return_value = {
+        "existing": existing_tab,
+        "url": "https://web.whatsapp.com/",
+    }
     sess.goto.return_value = {"url": "https://web.whatsapp.com/"}
+    # is_cdp_connected is a property on the real class; expose it as an attribute
+    # on the mock so the whatsapp code can read it.
+    type(sess).is_cdp_connected = property(lambda self: cdp_connected)
     if wait_raises is not None:
         sess.wait_for.side_effect = wait_raises
     else:
@@ -214,15 +224,20 @@ def test_contact_send_happy_path(monkeypatch):
 
     assert result["ok"] is True
     assert result["contact"] == "Arslan"
-    # goto must have been called with WhatsApp Web home
-    mock_sess.goto.assert_called_once_with("https://web.whatsapp.com/")
+    # find_or_open_page must have been called to navigate to WhatsApp Web
+    mock_sess.find_or_open_page.assert_called_once_with(
+        "web.whatsapp.com", fallback_url="https://web.whatsapp.com/"
+    )
 
 
 def test_contact_send_order_of_operations(monkeypatch):
-    """Verify: goto → wait_for → click search → type_text → wait_for → click result → compose → send."""
+    """Verify: find_or_open_page → wait_for → click search → type_text → … → compose → send."""
     call_log: list[str] = []
     sess = MagicMock()
-    sess.goto.side_effect = lambda *a, **kw: call_log.append("goto")
+    sess.find_or_open_page.side_effect = lambda *a, **kw: (
+        call_log.append("find_or_open_page") or {"existing": False, "url": "https://web.whatsapp.com/"}
+    )
+    type(sess).is_cdp_connected = property(lambda self: False)
     sess.wait_for.side_effect = lambda *a, **kw: call_log.append("wait_for") or {"ok": True}
     sess.click.side_effect = lambda *a, **kw: call_log.append("click") or {"ok": True}
     sess.type_text.side_effect = lambda *a, **kw: call_log.append("type_text") or {"ok": True}
@@ -237,8 +252,8 @@ def test_contact_send_order_of_operations(monkeypatch):
         mock_time.sleep = lambda _: None
         send_whatsapp_to_contact(name="Mom", message="Hi!", confirmed=True)
 
-    # goto is first
-    assert call_log[0] == "goto"
+    # find_or_open_page is first
+    assert call_log[0] == "find_or_open_page"
     # wait_for appears before type_text (page load check)
     assert call_log.index("wait_for") < call_log.index("type_text")
     # type_text (search box fill) happens before final send step
@@ -343,8 +358,10 @@ def test_send_whatsapp_to_contact_unconfirmed_returns_preview_does_not_send(monk
     assert len(result["matches"]) == 2
     assert result["matches"][0]["name"] == "Arslan Khan"
 
-    # goto and search must have happened
-    sess.goto.assert_called_once_with("https://web.whatsapp.com/")
+    # find_or_open_page must have been called to navigate to WhatsApp Web
+    sess.find_or_open_page.assert_called_once_with(
+        "web.whatsapp.com", fallback_url="https://web.whatsapp.com/"
+    )
     # type_text should have been called (for search box)
     sess.type_text.assert_called()
 
@@ -518,3 +535,89 @@ def test_preview_falls_back_to_search_term_when_no_matches(monkeypatch):
 
     assert result["confirmation_required"] is True
     assert "Unknown Person" in result["preview"]
+
+
+# ---- CDP / existing-tab tests ------------------------------------------------
+
+
+def test_send_whatsapp_to_contact_reuses_existing_whatsapp_tab(monkeypatch):
+    """When find_or_open_page returns existing=True, the tool reuses the tab.
+
+    In this path wait_for should be called with the SHORT (5 s) timeout
+    because the user is already logged in via CDP.
+    """
+    sess = _make_contact_session(cdp_connected=True, existing_tab=True)
+    sess.evaluate.side_effect = [
+        [{"index": 0, "name": "Arslan Khan", "subtitle": ""}],
+        "hello",
+    ]
+    monkeypatch.setattr("voice_assistant.tools.whatsapp._session", lambda: sess)
+
+    with patch("voice_assistant.tools.whatsapp.time") as mock_time:
+        mock_time.time.return_value = 1000.0
+        mock_time.sleep = lambda _: None
+        result = send_whatsapp_to_contact(name="Arslan", message="hello", confirmed=True)
+
+    assert result["ok"] is True
+
+    # find_or_open_page must have been called (not goto directly)
+    sess.find_or_open_page.assert_called_once_with(
+        "web.whatsapp.com", fallback_url="https://web.whatsapp.com/"
+    )
+
+    # wait_for must have been called with the short 5 s (5000 ms) timeout
+    wait_calls = sess.wait_for.call_args_list
+    assert wait_calls, "wait_for should have been called"
+    first_wait_timeout = wait_calls[0].kwargs.get("timeout_ms") or wait_calls[0].args[1]
+    assert first_wait_timeout == 5000, (
+        f"expected 5000 ms login timeout for existing tab; got {first_wait_timeout}"
+    )
+
+
+def test_send_whatsapp_no_cdp_uses_long_timeout(monkeypatch):
+    """Without CDP, the login wait_for uses the full 30 s timeout."""
+    sess = _make_contact_session(cdp_connected=False, existing_tab=False)
+    sess.evaluate.side_effect = [
+        [{"index": 0, "name": "Arslan Khan", "subtitle": ""}],
+        "hi",
+    ]
+    monkeypatch.setattr("voice_assistant.tools.whatsapp._session", lambda: sess)
+
+    with patch("voice_assistant.tools.whatsapp.time") as mock_time:
+        mock_time.time.return_value = 1000.0
+        mock_time.sleep = lambda _: None
+        result = send_whatsapp_to_contact(name="Arslan", message="hi", confirmed=True)
+
+    assert result["ok"] is True
+
+    wait_calls = sess.wait_for.call_args_list
+    first_wait_timeout = wait_calls[0].kwargs.get("timeout_ms") or wait_calls[0].args[1]
+    assert first_wait_timeout == 30000, (
+        f"expected 30000 ms login timeout for non-CDP path; got {first_wait_timeout}"
+    )
+
+
+def test_login_timeout_error_message_no_cdp(monkeypatch):
+    """Non-CDP login timeout → error message mentions --remote-debugging-port=9222."""
+    sess = _make_contact_session(cdp_connected=False, wait_raises=Exception("timeout"))
+    monkeypatch.setattr("voice_assistant.tools.whatsapp._session", lambda: sess)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        send_whatsapp_to_contact(name="Arslan", message="Hello")
+
+    msg = str(exc_info.value)
+    assert "--remote-debugging-port=9222" in msg
+    assert "QR code" in msg
+
+
+def test_login_timeout_error_message_cdp_no_tab(monkeypatch):
+    """CDP-connected but no WhatsApp tab → error message tells user to open tab."""
+    sess = _make_contact_session(cdp_connected=True, existing_tab=False, wait_raises=Exception("timeout"))
+    monkeypatch.setattr("voice_assistant.tools.whatsapp._session", lambda: sess)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        send_whatsapp_to_contact(name="Arslan", message="Hello")
+
+    msg = str(exc_info.value)
+    assert "web.whatsapp.com" in msg
+    assert "Chrome tab" in msg

@@ -4,6 +4,12 @@ The first call launches Chromium with a profile dir at
 ~/.voice-assistant/browser-profile/. Subsequent calls reuse it (so logins
 persist).
 
+CDP attach mode: when VA_CHROME_CDP_PORT is set (or cdp_port is passed),
+_BrowserSession first tries to connect to an existing Chrome instance via
+the Chrome DevTools Protocol. If that succeeds, the user's real Chrome tabs
+(and cookies) are available. If it fails, the session silently falls back to
+launching its own isolated Chromium.
+
 Public API is sync; Playwright's async loop is hidden behind a worker
 thread + asyncio.run_coroutine_threadsafe.
 """
@@ -12,11 +18,27 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import threading
 from pathlib import Path
 from typing import Any, cast
 
 log = logging.getLogger(__name__)
+
+# Default CDP port Chrome listens on when launched with --remote-debugging-port
+_DEFAULT_CDP_PORT = 9222
+
+
+def _cdp_port_from_env() -> int | None:
+    """Return the CDP port from VA_CHROME_CDP_PORT, or None if unset/invalid."""
+    raw = os.environ.get("VA_CHROME_CDP_PORT", "").strip()
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        log.warning("VA_CHROME_CDP_PORT=%r is not a valid port number; ignoring", raw)
+        return None
 
 
 class _BrowserSession:
@@ -25,14 +47,30 @@ class _BrowserSession:
     _lock = threading.Lock()
     _instance: _BrowserSession | None = None
 
-    def __init__(self, profile_dir: Path, headless: bool) -> None:
+    def __init__(
+        self,
+        profile_dir: Path,
+        headless: bool,
+        cdp_port: int | None = _DEFAULT_CDP_PORT,
+    ) -> None:
         self._profile = profile_dir
         self._headless = headless
+        # Environment variable overrides the constructor argument.
+        env_port = _cdp_port_from_env()
+        self._cdp_port: int | None = env_port if env_port is not None else cdp_port
+        self._cdp_connected: bool = False
         self._loop: asyncio.AbstractEventLoop | None = None
         self._thread: threading.Thread | None = None
         self._context: Any = None  # playwright BrowserContext
         self._ready = threading.Event()
         self._start_thread()
+
+    # ---- public property -----------------------------------------------------
+
+    @property
+    def is_cdp_connected(self) -> bool:
+        """True when the session is attached to an existing Chrome via CDP."""
+        return self._cdp_connected
 
     def _start_thread(self) -> None:
         def run() -> None:
@@ -49,13 +87,42 @@ class _BrowserSession:
     async def _setup(self) -> None:
         from playwright.async_api import async_playwright
 
-        self._profile.mkdir(parents=True, exist_ok=True)
         self._pw = await async_playwright().start()
+
+        # --- Try CDP attach first (if a port is configured) ------------------
+        if self._cdp_port is not None:
+            try:
+                browser = await asyncio.wait_for(
+                    self._pw.chromium.connect_over_cdp(
+                        f"http://localhost:{self._cdp_port}"
+                    ),
+                    timeout=2.0,
+                )
+                self._context = (
+                    browser.contexts[0]
+                    if browser.contexts
+                    else await browser.new_context()
+                )
+                self._cdp_connected = True
+                log.info(
+                    "attached to existing Chrome via CDP on port %d", self._cdp_port
+                )
+                return
+            except Exception as exc:
+                log.debug(
+                    "CDP attach to port %d failed: %s — falling back to isolated profile",
+                    self._cdp_port,
+                    exc,
+                )
+
+        # --- Fall back: launch isolated Chromium with persistent profile ------
+        self._profile.mkdir(parents=True, exist_ok=True)
         self._context = await self._pw.chromium.launch_persistent_context(
             user_data_dir=str(self._profile),
             headless=self._headless,
             viewport={"width": 1280, "height": 800},
         )
+        self._cdp_connected = False
 
     def _run(self, coro: Any) -> Any:
         assert self._loop is not None
@@ -63,10 +130,16 @@ class _BrowserSession:
         return future.result(timeout=60)
 
     @classmethod
-    def get(cls, *, profile_dir: Path, headless: bool = False) -> _BrowserSession:
+    def get(
+        cls,
+        *,
+        profile_dir: Path,
+        headless: bool = False,
+        cdp_port: int | None = _DEFAULT_CDP_PORT,
+    ) -> _BrowserSession:
         with cls._lock:
             if cls._instance is None:
-                cls._instance = cls(profile_dir, headless)
+                cls._instance = cls(profile_dir, headless, cdp_port=cdp_port)
             return cls._instance
 
     async def _page(self) -> Any:
@@ -76,6 +149,34 @@ class _BrowserSession:
         return await self._context.new_page()
 
     # ---- public sync facade --------------------------------------------------
+
+    def find_or_open_page(
+        self, url_substring: str, *, fallback_url: str
+    ) -> dict[str, Any]:
+        """Find an open tab whose URL contains *url_substring*; if none, open *fallback_url*.
+
+        Returns ``{"existing": True, "url": <tab url>}`` when an existing tab is
+        found and brought to the foreground, or ``{"existing": False, "url":
+        fallback_url}`` when a new tab had to be opened.
+
+        Subsequent calls to :meth:`goto` / :meth:`click` / etc. operate on the
+        page that is now at the front of ``context.pages``.
+        """
+
+        async def _find() -> dict[str, Any]:
+            assert self._context is not None
+            for page in self._context.pages:
+                if url_substring in (page.url or ""):
+                    await page.bring_to_front()
+                    return {"existing": True, "url": page.url}
+            # No matching tab — open a new one.
+            new_page = await self._page()
+            await new_page.goto(
+                fallback_url, wait_until="domcontentloaded", timeout=20000
+            )
+            return {"existing": False, "url": new_page.url}
+
+        return cast(dict[str, Any], self._run(_find()))
 
     def goto(self, url: str) -> dict[str, Any]:
         async def _go() -> dict[str, Any]:

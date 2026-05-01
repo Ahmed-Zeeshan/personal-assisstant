@@ -7,6 +7,14 @@ from typing import TYPE_CHECKING, Any
 
 import yaml
 
+try:
+    import httpx as _httpx
+
+    _httpx_available = True
+except ModuleNotFoundError:
+    _httpx = None  # type: ignore[assignment]
+    _httpx_available = False
+
 from voice_assistant.config import Config
 from voice_assistant.desktop.events import EventBus
 from voice_assistant.setup_wizard import (
@@ -243,6 +251,30 @@ class Bridge:
         if self._history is None:
             return []
         return self._history.load_recent(50)
+
+    def is_browser_attached_to_chrome(self) -> bool:
+        """Return True when a Chrome instance is reachable on the CDP debug port.
+
+        Tries ``GET http://localhost:9222/json/version`` with a 1 s timeout.
+        The port can be overridden via the ``VA_CHROME_CDP_PORT`` environment
+        variable (same variable used by the browser session).
+
+        Does NOT launch the browser — safe to call at any time (e.g. when the
+        Settings drawer opens).
+        """
+        import os
+
+        port = int(os.environ.get("VA_CHROME_CDP_PORT", "9222") or "9222")
+        if not _httpx_available or _httpx is None:
+            log.debug("httpx not available — cannot probe CDP port")
+            return False
+        try:
+            resp = _httpx.get(
+                f"http://localhost:{port}/json/version", timeout=1.0
+            )
+            return resp.status_code == 200
+        except Exception:
+            return False
 
     def quit(self) -> None:
         # Window close is handled in window.py; this is a hook for the JS quit shortcut.

@@ -3,6 +3,11 @@
 First call: WhatsApp Web loads, you scan a QR code from the phone (one-time).
 Subsequent calls: fully automatic.
 
+CDP mode: when the assistant is attached to the user's real Chrome (via CDP),
+it looks for an already-open ``web.whatsapp.com`` tab and reuses it instead
+of navigating over the user's session. This means no QR-code re-scan is
+needed as long as the user keeps WhatsApp Web open in Chrome.
+
 Hard rate limit: 5 messages / 5 minutes — prevents accidental spam that
 WhatsApp's anti-automation could ban the number for.
 
@@ -13,6 +18,7 @@ send_whatsapp_to_contact implements a two-step confirmation flow:
 
 from __future__ import annotations
 
+import logging
 import re
 import time
 from collections import deque
@@ -21,6 +27,8 @@ from typing import Any
 from urllib.parse import quote
 
 from voice_assistant.tools.browser import _session
+
+log = logging.getLogger(__name__)
 
 _RATE_LIMIT_WINDOW_S = 300
 _RATE_LIMIT_COUNT = 5
@@ -244,10 +252,15 @@ def send_whatsapp_to_contact(
     sess = _session()
 
     # ------------------------------------------------------------------
-    # Step 1: Navigate to WhatsApp Web
+    # Step 1: Navigate to WhatsApp Web (or reuse an existing tab)
     # ------------------------------------------------------------------
     try:
-        sess.goto("https://web.whatsapp.com/")
+        tab_result = sess.find_or_open_page(
+            "web.whatsapp.com", fallback_url="https://web.whatsapp.com/"
+        )
+        existing_tab = tab_result.get("existing", False)
+        if existing_tab:
+            log.info("reusing existing WhatsApp Web tab at %s", tab_result["url"])
     except RuntimeError as exc:
         screenshot = _capture_failure_screenshot(sess, "goto failed")
         suffix = f" Screenshot: {screenshot}" if screenshot else ""
@@ -255,21 +268,33 @@ def send_whatsapp_to_contact(
 
     # ------------------------------------------------------------------
     # Step 2: Wait for logged-in state
+    # When we found an existing tab the user is almost certainly already
+    # logged in — use a short timeout to avoid blocking for 30 s.
     # ------------------------------------------------------------------
+    login_timeout_ms = 5000 if (existing_tab and sess.is_cdp_connected) else 30000
     try:
         sess.wait_for(
             'div[contenteditable="true"][data-tab="3"], '
             'div[role="textbox"][contenteditable="true"], '
             'header[data-testid="chatlist-header"]',
-            timeout_ms=30000,
+            timeout_ms=login_timeout_ms,
         )
     except Exception as exc:
         screenshot = _capture_failure_screenshot(sess, "login check")
         suffix = f" Screenshot: {screenshot}" if screenshot else ""
-        raise RuntimeError(
-            "WhatsApp Web didn't load. If this is your first send, you may need "
-            f"to scan the QR code in the launched browser.{suffix}"
-        ) from exc
+        if not sess.is_cdp_connected:
+            raise RuntimeError(
+                "WhatsApp Web didn't load in the assistant's browser. To use your "
+                "existing Chrome session (where you're already logged in), launch "
+                "Chrome with --remote-debugging-port=9222 and try again. Or scan "
+                f"the QR code in the assistant's browser to log in once.{suffix}"
+            ) from exc
+        else:
+            raise RuntimeError(
+                "Couldn't find WhatsApp Web in your Chrome tabs. Open web.whatsapp.com "
+                "in any Chrome tab (the assistant will reuse it), then try again."
+                f"{suffix}"
+            ) from exc
 
     # ------------------------------------------------------------------
     # Step 3: Search for the contact

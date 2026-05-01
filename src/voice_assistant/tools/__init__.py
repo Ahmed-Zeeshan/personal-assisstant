@@ -352,6 +352,16 @@ def build_registry(
     except ImportError:
         pass  # [browser] extra not installed — silently skip
 
+    # ---- plugin tools (optional; ~/.voice-assistant/plugins/*.py) ----------
+    try:
+        from voice_assistant.plugins import load_plugins
+
+        load_plugins(specs, policy)
+    except Exception as exc:
+        import logging as _logging
+
+        _logging.getLogger(__name__).warning("plugin loader error: %s", exc)
+
     return specs
 
 

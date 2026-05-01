@@ -44,7 +44,12 @@ def main() -> None:
         )
         return
 
-    load_dotenv()
+    # Load the user's config + secrets from ~/.voice-assistant/.env first; fall back
+    # to a project-local .env (useful when developing from the source tree).
+    _va_env = Path.home() / ".voice-assistant" / ".env"
+    if _va_env.exists():
+        load_dotenv(_va_env)
+    load_dotenv()  # project-local fallback; does NOT override values already set
     cfg = load_config(args.config)
     configure_logging(level=cfg.logging.level, log_file=cfg.logging.file)
 
@@ -142,6 +147,9 @@ def _run_gui_mode(orch: Orchestrator, cfg: Config, config_path: Path) -> None:
 
     def _reload_brain() -> None:
         """Re-read config + .env and rebuild the orchestrator with the new brain."""
+        _va_env_path = Path.home() / ".voice-assistant" / ".env"
+        if _va_env_path.exists():
+            load_dotenv(_va_env_path, override=True)
         load_dotenv(override=True)
         new_cfg = load_config(config_path)
         new_policy = SafetyPolicy(

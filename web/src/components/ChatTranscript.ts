@@ -50,26 +50,31 @@ export class ChatTranscript {
   }
 
   startAssistant(): void {
-    this._clearPlaceholder();
-    const id = `turn-${++this.turnCounter}`;
-    const wrapper = document.createElement('div');
-    wrapper.className = 'va-bubble-row va-bubble-row--assistant va-reveal';
-    wrapper.dataset.turnId = id;
-    wrapper.innerHTML = `
-      <div class="va-bubble va-bubble--assistant">
-        <span class="va-bubble-body"></span><span class="va-cursor" aria-hidden="true">▋</span>
-      </div>
-    `;
-    this.el.appendChild(wrapper);
-    this.streamingBubble = wrapper;
-    this.streamingBody = wrapper.querySelector<HTMLElement>('.va-bubble-body')!;
-    requestAnimationFrame(() => wrapper.classList.add('is-visible'));
-    this._scrollToBottom();
+    // Lazy: don't create the bubble until the first appendAssistant arrives.
+    // This prevents an empty bubble appearing if the request errors before any
+    // tokens stream back.
+    this.streamingBubble = null;
+    this.streamingBody = null;
   }
 
   appendAssistant(text: string): void {
-    if (!this.streamingBody) this.startAssistant();
-    this.streamingBody!.textContent = (this.streamingBody!.textContent || '') + text;
+    if (!this.streamingBody) {
+      this._clearPlaceholder();
+      const id = `turn-${++this.turnCounter}`;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'va-bubble-row va-bubble-row--assistant va-reveal';
+      wrapper.dataset.turnId = id;
+      wrapper.innerHTML = `
+        <div class="va-bubble va-bubble--assistant">
+          <span class="va-bubble-body"></span><span class="va-cursor" aria-hidden="true">▋</span>
+        </div>
+      `;
+      this.el.appendChild(wrapper);
+      this.streamingBubble = wrapper;
+      this.streamingBody = wrapper.querySelector<HTMLElement>('.va-bubble-body')!;
+      requestAnimationFrame(() => wrapper.classList.add('is-visible'));
+    }
+    this.streamingBody.textContent = (this.streamingBody.textContent || '') + text;
     this._scrollToBottom();
   }
 

@@ -24,7 +24,7 @@ gmail = [
     "google-api-python-client>=2.100",
     "google-auth-oauthlib>=1.1",
 ]
-desktop = ["pywebview>=5"]
+desktop = ["pywebview>=6.2.1"]
 web = [
     "duckduckgo-search>=6.0",
     "trafilatura>=1.12",

@@ -14,7 +14,7 @@ dependencies = [
 
 [project.optional-dependencies]
 audio = [
-    "faster-whisper>=1.0",
+    "faster-whisper>=1.2.1",
     "sounddevice>=0.4.6",
     "pynput>=1.7.6",
     "numpy>=1.26",

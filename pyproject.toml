@@ -17,7 +17,7 @@ audio = [
     "faster-whisper>=1.0",
     "sounddevice>=0.4.6",
     "pynput>=1.7.6",
-    "numpy>=1.26",
+    "numpy>=2.4.4",
     "piper-tts>=1.2",
 ]
 gmail = [
@@ -32,7 +32,7 @@ web = [
 ]
 memory = [
     "sqlite-vec>=0.1.6",
-    "numpy>=1.26",
+    "numpy>=2.4.4",
 ]
 browser = [
     "playwright>=1.49",
